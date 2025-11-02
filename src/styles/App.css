@@ -1,0 +1,77 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+}
+
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #111111;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+main {
+  flex: 1;
+  overflow: visible;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+
+.game-border-container {
+  position: relative;
+  width: 1229px;
+  height: 922px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.game-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.game-container {
+  width: 1024px;
+  height: 768px;
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  box-sizing: content-box;
+  z-index: 1; /* behind the border but above background elements */
+  border: none;
+  box-shadow: none;
+}
+
+.game-header {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.header-image {
+  display: block;
+  max-width: 550px;
+  height: auto;
+}

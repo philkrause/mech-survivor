@@ -1,0 +1,31 @@
+#### FEATURES: ####
+
+Add additional enemies
+Boss fight 
+desert level
+Character Select
+Start Menu
+off screen objectives
+have enemies despawn if off camera
+create more levels
+make first level to have some variations
+have health bar be a light saber
+game over screen
+Enemy projectile system
+
+
+#### BUGS: ####
+
+First Projectile doesnt get destroyed
+Player should always be moving on start of Game
+Saber projectile will continue to move past max distance
+random particles not despawning 
+Enemy Damage not defined
+blaster not firing until movement
+
+
+
+#### BUGS FIXED ####
+Enemy damage amount doesnt display on kill
+Game Banner too low
+saber shoots the wrong way when walking
