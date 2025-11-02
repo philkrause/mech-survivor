@@ -493,6 +493,9 @@ export class RelicSystem {
 
     // Apply the relic effect
     this.upgradeSystem.applyUpgrade(selectedRelicId);
+    
+    // Emit event for stats tracking
+    this.scene.events.emit('relic-claimed', selectedRelicId);
 
     // Clean up screen elements
     overlay.destroy();

@@ -330,12 +330,16 @@ export class LaserCannonSystem {
         const blasterDamageMultiplier = (this.player.getBlasterDamage() / GAME_CONFIG.BLASTER.PLAYER.DAMAGE);
         const damage = baseDamage * blasterDamageMultiplier;
         
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        
         // Damage enemy - check which system owns it
         let damaged = false;
         if (this.enemySystem) {
           const regularEnemies = this.enemySystem.getVisibleEnemies();
           if (regularEnemies.includes(enemy)) {
             this.enemySystem.damageEnemy(enemy, damage, 0, false);
+            if (statsTracker) statsTracker.recordWeaponDamage('laser_cannon', damage);
             damaged = true;
           }
         }
@@ -344,6 +348,7 @@ export class LaserCannonSystem {
           const atEnemies = this.atEnemySystem.getVisibleEnemies();
           if (atEnemies.includes(enemy)) {
             this.atEnemySystem.damageEnemy(enemy, damage, 0, false);
+            if (statsTracker) statsTracker.recordWeaponDamage('laser_cannon', damage);
             damaged = true;
           }
         }
@@ -352,6 +357,7 @@ export class LaserCannonSystem {
           const walkerEnemies = this.walkerEnemySystem.getVisibleEnemies();
           if (walkerEnemies.includes(enemy)) {
             this.walkerEnemySystem.damageEnemy(enemy, damage, 0, false);
+            if (statsTracker) statsTracker.recordWeaponDamage('laser_cannon', damage);
             damaged = true;
           }
         }
@@ -360,6 +366,7 @@ export class LaserCannonSystem {
           const tfighters = this.tfighterSystem.getVisibleEnemies();
           if (tfighters.includes(enemy)) {
             this.tfighterSystem.damageEnemy(enemy, damage, 0, false);
+            if (statsTracker) statsTracker.recordWeaponDamage('laser_cannon', damage);
             damaged = true;
           }
         }

@@ -194,21 +194,34 @@ export class WalkerEnemySystem {
   }
 
   /**
-   * Update spawn zones based on camera position
+   * Update spawn zones based on camera position (matches EnemySystem pattern)
    */
   private updateSpawnZones(): void {
     const camera = this.scene.cameras.main;
-    const margin = 200; // Distance from camera edge to spawn enemies
+    const padding = 200; // Distance from camera edge to spawn enemies
     
+    // Create spawn zones with random ranges (like EnemySystem)
     this.spawnZones = [
-      // Left side
-      { x: camera.scrollX - margin, y: camera.centerY },
-      // Right side
-      { x: camera.scrollX + camera.width + margin, y: camera.centerY },
-      // Top side
-      { x: camera.centerX, y: camera.scrollY - margin },
-      // Bottom side
-      { x: camera.centerX, y: camera.scrollY + camera.height + margin }
+      // Left side - random Y position along the left edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding * 2, camera.scrollX - padding),
+        y: Phaser.Math.Between(camera.scrollY - padding, camera.scrollY + camera.height + padding)
+      },
+      // Right side - random Y position along the right edge
+      {
+        x: Phaser.Math.Between(camera.scrollX + camera.width + padding, camera.scrollX + camera.width + padding * 2),
+        y: Phaser.Math.Between(camera.scrollY - padding, camera.scrollY + camera.height + padding)
+      },
+      // Top side - random X position along the top edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding, camera.scrollX + camera.width + padding),
+        y: Phaser.Math.Between(camera.scrollY - padding * 2, camera.scrollY - padding)
+      },
+      // Bottom side - random X position along the bottom edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding, camera.scrollX + camera.width + padding),
+        y: Phaser.Math.Between(camera.scrollY + camera.height + padding, camera.scrollY + camera.height + padding * 2)
+      }
     ];
   }
 
@@ -310,6 +323,7 @@ export class WalkerEnemySystem {
     if (this.healthBarsEnabled) {
       this.createHealthBar(enemy);
     }
+
   }
 
   /**
@@ -446,6 +460,7 @@ export class WalkerEnemySystem {
     
     this.offscreenTimers.delete(enemy);
     
+    
     enemy.setActive(false);
     enemy.setVisible(false);
     enemy.setPosition(-1000, -1000);
@@ -470,7 +485,7 @@ export class WalkerEnemySystem {
   /**
    * Update all Walker enemies
    */
-  public update(): void {
+  public update(_time?: number, delta?: number): void {
     if (!this.spawnTimer) {
       this.spawnTimer = this.startSpawnTimer();
     }
@@ -488,7 +503,8 @@ export class WalkerEnemySystem {
     // Update laser lines
     this.updateLasers();
     
-    this.cleanupOffscreenEnemies();
+    // Pass delta to cleanup function
+    this.cleanupOffscreenEnemies(delta || 16.67); // Default to ~60fps if delta not provided
   }
 
   /**
@@ -562,21 +578,30 @@ export class WalkerEnemySystem {
   /**
    * Clean up enemies that have been off-screen too long
    */
-  private cleanupOffscreenEnemies(): void {
-    const currentTime = this.scene.time.now;
-    const maxOffscreenTime = 5000;
+  private cleanupOffscreenEnemies(delta: number): void {
+    const camera = this.scene.cameras.main;
     
     this.activeEnemies.forEach(enemy => {
-      if (!this.cameraRect.contains(enemy.x, enemy.y)) {
-        if (!this.offscreenTimers.has(enemy)) {
-          this.offscreenTimers.set(enemy, currentTime);
-        } else {
-          const offscreenTime = currentTime - this.offscreenTimers.get(enemy)!;
-          if (offscreenTime > maxOffscreenTime) {
-            this.killEnemy(enemy);
-          }
+      // Use more accurate visibility check with enemy bounds (matching EnemySystem)
+      const isVisibleToCamera =
+        enemy.x + enemy.width > camera.worldView.left &&
+        enemy.x - enemy.width < camera.worldView.right &&
+        enemy.y + enemy.height > camera.worldView.top &&
+        enemy.y - enemy.height < camera.worldView.bottom;
+
+      if (!isVisibleToCamera) {
+        const elapsed = this.offscreenTimers.get(enemy) || 0;
+        // Accumulate delta time for off-screen enemies
+        const newElapsed = elapsed + delta;
+        this.offscreenTimers.set(enemy, newElapsed);
+
+        // Despawn after 2 seconds (2000ms) - matching EnemySystem behavior
+        if (newElapsed > 2000) {
+          this.killEnemy(enemy);
+          this.offscreenTimers.delete(enemy);
         }
       } else {
+        // If back on screen, reset the timer
         this.offscreenTimers.delete(enemy);
       }
     });
@@ -720,12 +745,12 @@ export class WalkerEnemySystem {
     const elapsed = this.scene.time.now - laserLine.startTime;
     
     if (!laserLine.isFiring) {
-      // AIMING PHASE: White line only (no damage)
+      // AIMING PHASE: Transparent red line only (no damage)
       const alpha = Math.max(0, Math.min(1, (this.aimingDuration - elapsed) / this.aimingDuration));
-      graphics.lineStyle(4, 0xffffff, alpha * 0.9); // White aiming line
+      graphics.lineStyle(4, 0xff0000, alpha * 0.4); // Transparent red aiming line
       graphics.lineBetween(line.x1, line.y1, line.x2, line.y2);
     } else {
-      // FIRING PHASE: Blue line with gradual animation down the line
+      // FIRING PHASE: Red line with gradual animation down the line
       const firingElapsed = elapsed - this.aimingDuration;
       const firingProgress = Math.min(1, firingElapsed / this.firingDuration);
       
@@ -733,23 +758,23 @@ export class WalkerEnemySystem {
       const remaining = this.laserDuration - elapsed;
       const alpha = Math.max(0, Math.min(1, remaining / this.firingDuration));
       
-      // Calculate how far the blue has traveled (from start to end)
-      const blueProgress = firingProgress; // 0 to 1 as blue travels down line
+      // Calculate how far the red has traveled (from start to end)
+      const redProgress = firingProgress; // 0 to 1 as red travels down line
       
-      // Calculate point where blue transition occurs
-      const transitionX = line.x1 + (line.x2 - line.x1) * blueProgress;
-      const transitionY = line.y1 + (line.y2 - line.y1) * blueProgress;
+      // Calculate point where red transition occurs
+      const transitionX = line.x1 + (line.x2 - line.x1) * redProgress;
+      const transitionY = line.y1 + (line.y2 - line.y1) * redProgress;
       
-      // Draw white line (aiming section) - from start to transition point
-      graphics.lineStyle(4, 0xffffff, alpha * 0.7);
+      // Draw transparent red line (aiming section) - from start to transition point
+      graphics.lineStyle(4, 0xff0000, alpha * 0.3);
       graphics.lineBetween(line.x1, line.y1, transitionX, transitionY);
       
-      // Draw blue firing section - from transition point to end
-      graphics.lineStyle(6, 0x0066ff, alpha * 0.9); // Blue outline
+      // Draw red firing section - from transition point to end
+      graphics.lineStyle(6, 0xff0000, alpha * 0.9); // Red outline
       graphics.lineBetween(transitionX, transitionY, line.x2, line.y2);
       
-      // Draw inner white core for firing section
-      graphics.lineStyle(3, 0xffffff, alpha * 0.8); // White core
+      // Draw inner bright red core for firing section
+      graphics.lineStyle(3, 0xff6666, alpha * 0.8); // Bright red core
       graphics.lineBetween(transitionX, transitionY, line.x2, line.y2);
     }
   }

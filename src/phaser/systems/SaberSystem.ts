@@ -3,6 +3,7 @@ import { GAME_CONFIG } from '../config/GameConfig';
 import { EnemySystem } from './EnemySystem';
 import { TfighterSystem } from './TfighterSystem';
 import { AtEnemySystem } from './AtEnemySystem';
+import { WalkerEnemySystem } from './WalkerEnemySystem';
 import { SoundManager } from '../utils/SoundManager';
 
 import { Player } from '../entities/Player';
@@ -28,6 +29,7 @@ export class SaberSystem {
   private slashTimer?: Phaser.Time.TimerEvent;
   private enemySystem: EnemySystem;
   private atEnemySystem: AtEnemySystem | null = null;
+  private walkerEnemySystem: WalkerEnemySystem | null = null;
   private tfighterSystem: TfighterSystem;
   private player: Player;
   private soundManager: SoundManager;
@@ -51,13 +53,14 @@ export class SaberSystem {
   };
 
 
-  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player, soundManager: SoundManager, atEnemySystem?: AtEnemySystem) {
+  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player, soundManager: SoundManager, atEnemySystem?: AtEnemySystem, walkerEnemySystem?: WalkerEnemySystem) {
     this.scene = scene;
     this.enemySystem = enemySystem;
     this.tfighterSystem = tfighterSystem;
     this.player = player;
     this.soundManager = soundManager;
     this.atEnemySystem = atEnemySystem || null;
+    this.walkerEnemySystem = walkerEnemySystem || null;
     this.slashTimer = undefined;
   }
 
@@ -268,16 +271,21 @@ export class SaberSystem {
       const enemies = this.enemySystem.getEnemiesNear(flamethrower.x, flamethrower.y, 150);
       const tfighters = this.tfighterSystem.getEnemiesNear(flamethrower.x, flamethrower.y, 150);
       const atEnemies = this.atEnemySystem ? this.atEnemySystem.getVisibleEnemies() : [];
+      const walkerEnemies = this.walkerEnemySystem ? this.walkerEnemySystem.getVisibleEnemies() : [];
       const dmgData = this.calculateSlashDamage(this.saberSlashConfig);
       const dmg = dmgData.damage;
       const isCritical = dmgData.isCritical;
 
+      // Track damage for stats
+      const statsTracker = (this.scene as any).statsTracker;
+      
       // Deal damage to enemies in hitbox (avoid duplicates per frame)
       enemies.forEach((enemy) => {
         if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
           hitEnemies.add(enemy);
           this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
           this.enemySystem.damageEnemy(enemy, dmg, 0, isCritical);
+          if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
           // Reset hit tracking after a short delay to allow continuous damage
           this.scene.time.delayedCall(100, () => {
             hitEnemies.delete(enemy);
@@ -290,6 +298,7 @@ export class SaberSystem {
           hitEnemies.add(enemy);
           this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
           this.tfighterSystem.damageEnemy(enemy, dmg, 0, isCritical);
+          if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
           // Reset hit tracking after a short delay to allow continuous damage
           this.scene.time.delayedCall(100, () => {
             hitEnemies.delete(enemy);
@@ -304,6 +313,23 @@ export class SaberSystem {
             hitEnemies.add(enemy);
             this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
             this.atEnemySystem!.damageEnemy(enemy, dmg, 0, isCritical);
+            if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
+            // Reset hit tracking after a short delay to allow continuous damage
+            this.scene.time.delayedCall(100, () => {
+              hitEnemies.delete(enemy);
+            });
+          }
+        });
+      }
+
+      // Deal damage to Walker enemies in hitbox
+      if (this.walkerEnemySystem) {
+        walkerEnemies.forEach((enemy) => {
+          if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
+            hitEnemies.add(enemy);
+            this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
+            this.walkerEnemySystem!.damageEnemy(enemy, dmg, 0, isCritical);
+            if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
             // Reset hit tracking after a short delay to allow continuous damage
             this.scene.time.delayedCall(100, () => {
               hitEnemies.delete(enemy);

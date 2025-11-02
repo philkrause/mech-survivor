@@ -102,7 +102,7 @@ export const GAME_CONFIG = {
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
     MAX_COUNT: 8, // Maximum number of Walker enemies at once
-    MIN_LEVEL: 5, // Minimum player level before Walker enemies spawn
+    MIN_LEVEL: 2, // Minimum player level before Walker enemies spawn
     RELIC_DROP_CHANCE: 0.15,
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)

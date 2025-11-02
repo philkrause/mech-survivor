@@ -144,7 +144,7 @@ export class PlayerStatsPanel {
     
     // Create container
     this.container = this.scene.add.container(0, 0);
-    this.container.setDepth(99); // Just below upgrade UI
+    this.container.setDepth(101); // Above overlay (99) but below upgrade UI container (100) and cursor (101)
     
     // Create background - positioned relative to camera scroll
     // Make it wider to accommodate all text

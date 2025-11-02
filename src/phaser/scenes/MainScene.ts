@@ -25,6 +25,7 @@ import { GAME_CONFIG } from '../config/GameConfig';
 import { PerformanceMonitor } from '../systems/PerformanceMonitor';
 import { StressTestController } from '../systems/StressTestController';
 import { SoundManager } from '../utils/SoundManager';
+import { StatsTracker } from '../systems/StatsTracker';
 import StartScene from './StartScene';
 
 /**
@@ -57,6 +58,7 @@ export default class MainScene extends Phaser.Scene {
   private background!: Phaser.GameObjects.TileSprite;
   private soundManager!: SoundManager;
   private enemyKillCount: number = 0; // Track total enemy kills
+  private statsTracker!: StatsTracker;
   
   // Stress testing systems
   private performanceMonitor!: PerformanceMonitor;
@@ -170,7 +172,7 @@ export default class MainScene extends Phaser.Scene {
 
     this.laserCannonSystem = new LaserCannonSystem(this, this.player);
 
-    this.saberSystem = new SaberSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.soundManager, this.atEnemySystem);
+    this.saberSystem = new SaberSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.soundManager, this.atEnemySystem, this.walkerEnemySystem);
     
     // Set enemy systems for laser cannon
     this.laserCannonSystem.setEnemySystems(this.enemySystem, this.atEnemySystem, this.walkerEnemySystem, this.tfighterSystem);
@@ -203,6 +205,7 @@ export default class MainScene extends Phaser.Scene {
     //setup saber attacks - only start if player has saber ability
     this.events.on('upgrade-saber', () => {
       const playerBody = this.player.getSprite();
+      this.statsTracker.startWeaponTracking('flamethrower', 'Flamethrower', 1);
 
       this.saberSystem.startAutoSlash(() => ({
         x: playerBody.x,
@@ -215,7 +218,26 @@ export default class MainScene extends Phaser.Scene {
     this.events.on('upgrade-bb8', () => {
       if (!this.bb8System.isActive()) {
         this.bb8System.unlockAndActivate();
+        this.statsTracker.startWeaponTracking('bb8', 'Combat Drone', 1);
       }
+    });
+
+    // Track weapon unlocks
+    this.events.on('upgrade-force', () => {
+      this.statsTracker.startWeaponTracking('force', 'Plasma Blast', 1);
+    });
+
+    this.events.on('upgrade-r2d2', () => {
+      this.statsTracker.startWeaponTracking('r2d2', 'Attack Chopper', 1);
+    });
+
+    this.events.on('upgrade-laser-cannon', () => {
+      this.statsTracker.startWeaponTracking('laser_cannon', 'Laser Cannon', 1);
+    });
+
+    // Track relic collection - listen for when player adds relic
+    this.events.on('relic-claimed', (relicId: string) => {
+      this.statsTracker.recordRelic(relicId);
     });
     
 
@@ -246,10 +268,16 @@ export default class MainScene extends Phaser.Scene {
     this.events.on('enemy-death', () => {
       this.enemyKillCount++;
       this.gameUI.updateKillCount(this.enemyKillCount);
+      this.statsTracker.recordKill();
     });
 
     // Create relic system (needs GameUI reference)
     this.relicSystem = new RelicSystem(this, this.player, this.gameUI, this.upgradeSystem);
+
+    // Initialize stats tracker
+    this.statsTracker = new StatsTracker();
+    // Blaster starts unlocked
+    this.statsTracker.startWeaponTracking('blaster', 'Blaster', 1);
 
     // Initialize particle effects system
     this.particleEffects = new ParticleEffects(this);
@@ -467,6 +495,9 @@ export default class MainScene extends Phaser.Scene {
     // Emit hit effect event
     this.events.emit('projectile-hit', e.x, e.y, isCritical);
     
+    // Track damage for stats
+    this.statsTracker.recordWeaponDamage('blaster', damage);
+    
     this.enemySystem.damageEnemy(e, damage, 0, isCritical);
 
     this.projectileSystem.deactivate(p);
@@ -484,6 +515,9 @@ export default class MainScene extends Phaser.Scene {
     
     // Emit hit effect event
     this.events.emit('projectile-hit', e.x, e.y, isCritical);
+    
+    // Track damage for stats
+    this.statsTracker.recordWeaponDamage('blaster', damage);
     
     this.tfighterSystem.damageEnemy(e, damage, 0, isCritical);
 
@@ -505,6 +539,9 @@ export default class MainScene extends Phaser.Scene {
     
     // Emit hit effect event
     this.events.emit('projectile-hit', e.x, e.y, isCritical);
+    
+    // Track damage for stats
+    this.statsTracker.recordWeaponDamage('blaster', damage);
     
     // Damage the AT enemy
     const isDead = this.atEnemySystem.damageEnemy(e, damage, 50, isCritical);
@@ -846,8 +883,8 @@ export default class MainScene extends Phaser.Scene {
 
     // Update enemy systems
     this.profileSystem('enemySystem.update', () => this.enemySystem.update(time, _delta));
-    this.profileSystem('atEnemySystem.update', () => this.atEnemySystem.update());
-    this.profileSystem('walkerEnemySystem.update', () => this.walkerEnemySystem.update());
+    this.profileSystem('atEnemySystem.update', () => this.atEnemySystem.update(time, _delta));
+    this.profileSystem('walkerEnemySystem.update', () => this.walkerEnemySystem.update(time, _delta));
     this.profileSystem('tfighterSystem.update', () => this.tfighterSystem.update(time, _delta));
 
 
@@ -1063,6 +1100,28 @@ export default class MainScene extends Phaser.Scene {
     this.events.emit('level-up', playerPos.x, playerPos.y);
     
     console.log(`Player reached level ${level}! Adjusting enemy spawn rate.`);
+  }
+
+  /**
+   * Show results screen when player dies
+   */
+  showResults(): void {
+    // Get player level and relics
+    const playerLevel = this.player.getLevel();
+    const playerRelics = (this.player as any).relics as Set<string> | undefined;
+    
+    // Record relics in stats tracker
+    if (playerRelics) {
+      playerRelics.forEach(relicId => {
+        this.statsTracker.recordRelic(relicId);
+      });
+    }
+    
+    // Get final game stats
+    const gameStats = this.statsTracker.getGameStats(playerLevel);
+    
+    // Transition to results scene
+    this.scene.start('ResultsScene', { gameStats, upgradeSystem: this.upgradeSystem });
   }
 
   destroy(): void {

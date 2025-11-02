@@ -33,7 +33,7 @@ jobs:
         run: npm run build
 
       - name: Add CNAME
-        run: echo 'sw.clustergames.io' > dist/CNAME
+        run: echo 'mech.clustergames.io' > dist/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

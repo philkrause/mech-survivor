@@ -792,22 +792,11 @@ export class Player {
     // Hide the player sprite (original behavior)
     this.sprite.setActive(false).setVisible(false);
 
+    // Show Game Over text
     this.scene.add.text(
       cam.scrollX + cam.centerX,
       cam.scrollY + cam.centerY - 25,
-      `game over`, {
-      fontFamily: 'StarJedi',
-      fontSize: '64px',
-      color: '#ff0000',
-      stroke: '#000',
-      strokeThickness: 8,
-      align: 'center'
-    }).setOrigin(0.5).setDepth(1000);
-    
-    this.scene.add.text(
-      cam.scrollX + cam.centerX,
-      cam.scrollY + cam.centerY + 45,
-      `you reached level ${this.level}`, {
+      `GAME OVER`, {
       fontFamily: 'StarJedi',
       fontSize: '64px',
       color: '#ff0000',
@@ -816,10 +805,11 @@ export class Player {
       align: 'center'
     }).setOrigin(0.5).setDepth(1000);
 
-    const startButton = this.scene.add.text(
+    // Results button
+    const resultsButton = this.scene.add.text(
       cam.scrollX + cam.centerX,
-      cam.scrollY + cam.centerY + 115,
-      'try again?',
+      cam.scrollY + cam.centerY + 45,
+      'RESULTS',
       {
         fontFamily: 'StarJedi',
         fontSize: '64px',
@@ -831,15 +821,14 @@ export class Player {
     ).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(1000);
     
 
-      startButton.on('pointerdown', () => {
-        this.scene.scene.stop('MainScene');
-        this.scene.scene.remove('StartScene'); // important!
-        this.scene.scene.add('StartScene', StartScene, true); // true = auto-start
-  });
+    resultsButton.on('pointerdown', () => {
+      // Get game stats and transition to results scene
+      (this.scene as any).showResults();
+    });
 
-  // Hover effect
-  startButton.on('pointerover', () => startButton.setStyle({ backgroundColor: '#444' }));
-  startButton.on('pointerout', () => startButton.setStyle({ backgroundColor: '' }));
+    // Hover effect
+    resultsButton.on('pointerover', () => resultsButton.setStyle({ backgroundColor: '#444' }));
+    resultsButton.on('pointerout', () => resultsButton.setStyle({ backgroundColor: '' }));
         
   
 }

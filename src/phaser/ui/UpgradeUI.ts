@@ -38,7 +38,7 @@ export class UpgradeUI {
       0x000000, 0.7
     );
     this.overlay.setOrigin(0, 0);
-    this.overlay.setDepth(99);
+    this.overlay.setDepth(98); // Below stats panel (101) and upgrade UI container (100)
     this.overlay.setVisible(false);
     this.container.add(this.overlay);
 
@@ -329,7 +329,7 @@ export class UpgradeUI {
     this.selectionCursor.closePath();
     this.selectionCursor.fillPath();
     
-    this.selectionCursor.setDepth(101); // Above everything
+    this.selectionCursor.setDepth(102); // Above everything (overlay 98, stats 101, container 100, cursor 102)
     
     this.container.add(this.selectionCursor);
     this.updateSelectionCursor();

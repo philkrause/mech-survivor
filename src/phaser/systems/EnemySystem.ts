@@ -756,19 +756,32 @@ export class EnemySystem {
     const maxHealth = (enemy as any).maxHealth || GAME_CONFIG.ENEMY.MAX_HEALTH;
     const healthPercent = Math.max(0, Math.min(1, health / maxHealth));
 
-    // Get enemy type and scale for health bar positioning
-    // soldier1 is 1.5x, others use base scale
+    // Get enemy type for special handling
     const enemyType = (enemy as any).enemyType || '';
-    const enemyScale = enemyType === 'soldier1' ? GAME_CONFIG.ENEMY.SCALE * 1.5 : GAME_CONFIG.ENEMY.SCALE;
     
-    // Set health bar dimensions
-    const baseWidth = 30;
-    const width = baseWidth * enemyScale;
+    // Use consistent health bar size for all enemies (fixed width, not scaled)
+    // This ensures health bars are the same absolute size regardless of enemy scale
+    const width = 30; // Fixed width for all enemies
     const height = 4;
     
-    // Standard Y offset for health bar positioning
-    const baseYOffset = -20;
-    const yOffset = baseYOffset * enemyScale;
+    // Y offset - adjust for soldier1 to account for extra space at top of sprite sheet
+    // The ShockBot sprite has extra room at the top (sprite is positioned lower in 48px frame)
+    // Frame is 48px tall, but actual sprite content is smaller and starts lower in the frame
+    // With origin at (0.5, 0.5), frame top is at enemy.y - 24
+    // If sprite visual content starts ~12-14px down from frame top, visual top is at enemy.y - 24 + 12 = enemy.y - 12
+    // Health bar should be just above visual top, so offset should be closer to -12 (scaled)
+    let yOffset: number;
+    if (enemyType === 'soldier1') {
+      // For soldier1: sprite visual top is much closer to sprite center due to empty space at top
+      // Position health bar just above actual sprite visual top (not frame top)
+      const enemyScale = GAME_CONFIG.ENEMY.SCALE * 1.5;
+      yOffset = -12 * enemyScale; // Much closer to sprite (less negative = closer to center)
+    } else {
+      // Standard offset for other enemies
+      const baseYOffset = -20;
+      const enemyScale = GAME_CONFIG.ENEMY.SCALE;
+      yOffset = baseYOffset * enemyScale;
+    }
 
     // Draw background (empty health) - centered above enemy
     healthBar.fillStyle(0x222222, 0.8);

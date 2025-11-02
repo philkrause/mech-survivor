@@ -196,21 +196,34 @@ export class AtEnemySystem {
   }
 
   /**
-   * Update spawn zones based on camera position
+   * Update spawn zones based on camera position (matches EnemySystem pattern)
    */
   private updateSpawnZones(): void {
     const camera = this.scene.cameras.main;
-    const margin = 200; // Distance from camera edge to spawn enemies
+    const padding = 200; // Distance from camera edge to spawn enemies
     
+    // Create spawn zones with random ranges (like EnemySystem)
     this.spawnZones = [
-      // Left side
-      { x: camera.scrollX - margin, y: camera.centerY },
-      // Right side
-      { x: camera.scrollX + camera.width + margin, y: camera.centerY },
-      // Top side
-      { x: camera.centerX, y: camera.scrollY - margin },
-      // Bottom side
-      { x: camera.centerX, y: camera.scrollY + camera.height + margin }
+      // Left side - random Y position along the left edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding * 2, camera.scrollX - padding),
+        y: Phaser.Math.Between(camera.scrollY - padding, camera.scrollY + camera.height + padding)
+      },
+      // Right side - random Y position along the right edge
+      {
+        x: Phaser.Math.Between(camera.scrollX + camera.width + padding, camera.scrollX + camera.width + padding * 2),
+        y: Phaser.Math.Between(camera.scrollY - padding, camera.scrollY + camera.height + padding)
+      },
+      // Top side - random X position along the top edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding, camera.scrollX + camera.width + padding),
+        y: Phaser.Math.Between(camera.scrollY - padding * 2, camera.scrollY - padding)
+      },
+      // Bottom side - random X position along the bottom edge
+      {
+        x: Phaser.Math.Between(camera.scrollX - padding, camera.scrollX + camera.width + padding),
+        y: Phaser.Math.Between(camera.scrollY + camera.height + padding, camera.scrollY + camera.height + padding * 2)
+      }
     ];
   }
 
@@ -303,6 +316,7 @@ export class AtEnemySystem {
     if (this.healthBarsEnabled) {
       this.createHealthBar(enemy);
     }
+
   }
 
   /**
@@ -447,6 +461,7 @@ export class AtEnemySystem {
     // Remove from offscreen timers
     this.offscreenTimers.delete(enemy);
     
+    
     // Return to pool
     enemy.setActive(false);
     enemy.setVisible(false);
@@ -483,7 +498,7 @@ export class AtEnemySystem {
   /**
    * Update all AT enemies
    */
-  public update(): void {
+  public update(_time?: number, delta?: number): void {
     // Ensure spawn timer exists (recreate if destroyed)
     // Check if timer is null, undefined, or if it was destroyed (Phaser timers become null when destroyed)
     if (!this.spawnTimer) {
@@ -506,8 +521,8 @@ export class AtEnemySystem {
       this.updateEnemy(enemy);
     });
     
-    // Clean up off-screen enemies
-    this.cleanupOffscreenEnemies();
+    // Clean up off-screen enemies - pass delta time
+    this.cleanupOffscreenEnemies(delta || 16.67); // Default to ~60fps if delta not provided
   }
 
   /**
@@ -582,21 +597,30 @@ export class AtEnemySystem {
   /**
    * Clean up enemies that have been off-screen too long
    */
-  private cleanupOffscreenEnemies(): void {
-    const currentTime = this.scene.time.now;
-    const maxOffscreenTime = 5000; // 5 seconds
+  private cleanupOffscreenEnemies(delta: number): void {
+    const camera = this.scene.cameras.main;
     
     this.activeEnemies.forEach(enemy => {
-      if (!this.cameraRect.contains(enemy.x, enemy.y)) {
-        if (!this.offscreenTimers.has(enemy)) {
-          this.offscreenTimers.set(enemy, currentTime);
-        } else {
-          const offscreenTime = currentTime - this.offscreenTimers.get(enemy)!;
-          if (offscreenTime > maxOffscreenTime) {
-            this.killEnemy(enemy);
-          }
+      // Use more accurate visibility check with enemy bounds (matching EnemySystem)
+      const isVisibleToCamera =
+        enemy.x + enemy.width > camera.worldView.left &&
+        enemy.x - enemy.width < camera.worldView.right &&
+        enemy.y + enemy.height > camera.worldView.top &&
+        enemy.y - enemy.height < camera.worldView.bottom;
+
+      if (!isVisibleToCamera) {
+        const elapsed = this.offscreenTimers.get(enemy) || 0;
+        // Accumulate delta time for off-screen enemies
+        const newElapsed = elapsed + delta;
+        this.offscreenTimers.set(enemy, newElapsed);
+
+        // Despawn after 2 seconds (2000ms) - matching EnemySystem behavior
+        if (newElapsed > 2000) {
+          this.killEnemy(enemy);
+          this.offscreenTimers.delete(enemy);
         }
       } else {
+        // If back on screen, reset the timer
         this.offscreenTimers.delete(enemy);
       }
     });
@@ -713,7 +737,7 @@ export class AtEnemySystem {
       const dirY = dy / distance;
       
       // Fire enemy projectile using enemy laser pool
-      this.projectileSystem.fire(
+      const projectile = this.projectileSystem.fire(
         'enemy_laser', // Use enemy laser pool (laser.png texture)
         enemy.x,
         enemy.y,
@@ -721,7 +745,70 @@ export class AtEnemySystem {
         dirY,
         'enemy_blaster' // Projectile type for enemy shots
       );
+
+      // Add trail effect to projectile (same as player blaster)
+      if (projectile) {
+        this.addProjectileTrail(projectile);
+      }
     }
+  }
+
+  /**
+   * Add visual trail effect to AT enemy projectiles (matching player blaster trail)
+   */
+  private addProjectileTrail(projectile: Phaser.Physics.Arcade.Sprite): void {
+    // Track projectile path points for trail
+    const pathPoints: { x: number; y: number; time: number }[] = [];
+    const maxTrailLength = 200; // ms of trail history
+    
+    // Create graphics object for trail
+    const trailGraphics = this.scene.add.graphics();
+    trailGraphics.setDepth(projectile.depth - 1);
+    
+    // Update trail every frame
+    const updateTrail = () => {
+      if (!projectile.active) {
+        trailGraphics.destroy();
+        return;
+      }
+      
+      const now = this.scene.time.now;
+      
+      // Add current position to path
+      pathPoints.push({ x: projectile.x, y: projectile.y, time: now });
+      
+      // Remove old points outside trail window
+      while (pathPoints.length > 0 && (now - pathPoints[0].time) > maxTrailLength) {
+        pathPoints.shift();
+      }
+      
+      // Draw trail
+      trailGraphics.clear();
+      
+      if (pathPoints.length > 1) {
+        // Draw trail segments with fading alpha
+        for (let i = 1; i < pathPoints.length; i++) {
+          const prev = pathPoints[i - 1];
+          const curr = pathPoints[i];
+          const age = now - curr.time;
+          const alpha = 1.0 - (age / maxTrailLength); // Fade out over time
+          
+          // Red trail line
+          trailGraphics.lineStyle(3, 0xff0000, alpha * 0.8);
+          trailGraphics.lineBetween(prev.x, prev.y, curr.x, curr.y);
+          
+          // White highlight
+          trailGraphics.lineStyle(1, 0xffffff, alpha * 0.5);
+          trailGraphics.lineBetween(prev.x, prev.y, curr.x, curr.y);
+        }
+      }
+      
+      // Continue updating
+      this.scene.time.delayedCall(16, updateTrail); // ~60fps
+    };
+    
+    // Start trail updates
+    updateTrail();
   }
 
   /**

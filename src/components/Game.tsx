@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import MainScene from '../phaser/scenes/MainScene';
 import StartScene from '../phaser/scenes/StartScene';
+import ResultsScene from '../phaser/scenes/ResultsScene';
 
 import { GAME_CONFIG } from '../phaser/config/GameConfig';
 
@@ -50,7 +51,7 @@ const Game: React.FC = () => {
         target: 60,
         forceSetTimeOut: false, // Don't use setTimeout throttling
       },
-      scene: [StartScene, MainScene],
+      scene: [StartScene, MainScene, ResultsScene],
     };
 
     // Create new game instance
