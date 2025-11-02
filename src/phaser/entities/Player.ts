@@ -3,7 +3,6 @@ import { GAME_CONFIG } from '../config/GameConfig';
 import { normalizeVector } from '../utils/MathUtils';
 import { ProjectileSystem } from '../systems/ProjectileSystem'; // adjust path
 //import { CollisionSystem } from '../systems/CollisionSystem';
-import StartScene from "../scenes/StartScene"
 
 
 /**

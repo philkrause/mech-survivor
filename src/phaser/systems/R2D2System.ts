@@ -20,9 +20,6 @@ export class R2D2System {
     private active = false;
     private damage = 10;
     private chopperCount = 3; // Number of choppers to spawn
-
-    //tracking enemies that are hit
-    private lastAngle: number = 0;
     
     /**
      * Setup R2D2 animations (police_copter walk)
@@ -95,16 +92,16 @@ export class R2D2System {
         const allEnemies = [...enemies, ...tfighters];
 
         // Update each chopper
-        this.choppers.forEach((chopper, index) => {
+        this.choppers.forEach((chopper) => {
             if (!chopper.sprite || !chopper.sprite.active) return;
 
             // Advance angle
-            const lastAngle = chopper.angle;
+            const previousAngle = chopper.angle;
             chopper.angle += this.speed * (delta / 1000);
             chopper.angle %= 2 * Math.PI;
             
-            // Detect if we started a new revolution
-            if (chopper.angle < lastAngle) {
+            // Detect if we started a new revolution (wrapped around from 2π to 0)
+            if (chopper.angle < previousAngle) {
                 chopper.hitEnemiesThisRevolution = new WeakSet();
             }
 

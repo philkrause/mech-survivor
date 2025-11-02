@@ -148,7 +148,6 @@ export class PlayerStatsPanel {
     
     // Create background - positioned relative to camera scroll
     // Make it wider to accommodate all text
-    const cam = this.scene.cameras.main;
     this.background = this.scene.add.rectangle(0, 0, 220, 700, 0xd0d0d0, 0.9);
     this.background.setOrigin(0, 0);
     this.container.add(this.background);

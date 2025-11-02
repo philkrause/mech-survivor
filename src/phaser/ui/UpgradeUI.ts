@@ -11,7 +11,7 @@ export class UpgradeUI {
   private container: Phaser.GameObjects.Container;
   private titleText: Phaser.GameObjects.Text;
   private upgradeSections: Phaser.GameObjects.Container[] = [];
-  private mainBox: Phaser.GameObjects.Rectangle;
+  private mainBox!: Phaser.GameObjects.Rectangle; // Initialized in createUpgradeBox
   private isVisible: boolean = false;
   private onUpgradeSelected: (upgradeId: string) => void;
   private overlay!: Phaser.GameObjects.Rectangle;
@@ -197,7 +197,6 @@ export class UpgradeUI {
     const sectionHeight = 100;
     const sectionSpacing = 8;
     const padding = 20;
-    const titleHeight = 0; // Title is now above the box
     const boxHeight = (sectionHeight * upgrades.length) + (sectionSpacing * (upgrades.length - 1)) + (padding * 2);
 
     // Center the box relative to camera view (account for scroll)
