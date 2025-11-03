@@ -6,13 +6,14 @@ import { WalkerEnemySystem } from '../systems/WalkerEnemySystem';
 import { GameUI } from '../ui/GameUI';
 import { AssetManager } from '../systems/AssetManager';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
-import { SaberSystem } from '../systems/SaberSystem';
+import { FlamethrowerSystem } from '../systems/FlamethrowerSystem';
 import { ForceSystem } from '../systems/ForceSystem';
 import { TfighterSystem } from '../systems/TfighterSystem';
 
-import { R2D2System } from '../systems/R2D2System';
-import { BB8System } from '../systems/BB8System';
+import { AttackChopperSystem } from '../systems/AttackChopperSystem';
+import { CombatDroneSystem } from '../systems/CombatDroneSystem';
 import { LaserCannonSystem } from '../systems/LaserCannonSystem';
+import { AirStrikeSystem } from '../systems/AirStrikeSystem';
 import { RelicSystem } from '../systems/RelicSystem';
 import { ParticleEffects } from '../systems/ParticleEffects';
 
@@ -41,11 +42,12 @@ export default class MainScene extends Phaser.Scene {
   private projectileSystem!: ProjectileSystem;
   private tfighterSystem!: TfighterSystem;
   private forceSystem!: ForceSystem;
-  private saberSystem!: SaberSystem;
+  private flamethrowerSystem!: FlamethrowerSystem;
   private escapeKey!: Phaser.Input.Keyboard.Key;
-  private R2D2System!: R2D2System;
-  private bb8System!: BB8System;
+  private attackChopperSystem!: AttackChopperSystem;
+  private combatDroneSystem!: CombatDroneSystem;
   private laserCannonSystem!: LaserCannonSystem;
+  private airStrikeSystem!: AirStrikeSystem;
   private relicSystem!: RelicSystem;
   private particleEffects!: ParticleEffects;
 
@@ -164,18 +166,23 @@ export default class MainScene extends Phaser.Scene {
     // Set enemy system references for player auto-targeting
     this.player.setEnemySystems(this.enemySystem, this.atEnemySystem, this.tfighterSystem);
 
-    this.forceSystem = new ForceSystem(this, this.enemySystem, this.tfighterSystem, this.player);
+    this.forceSystem = new ForceSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.atEnemySystem, this.walkerEnemySystem);
 
-    this.R2D2System = new R2D2System(this, this.enemySystem, this.tfighterSystem, this.player);
+    this.attackChopperSystem = new AttackChopperSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.atEnemySystem, this.walkerEnemySystem);
 
-    this.bb8System = new BB8System(this, this.enemySystem, this.tfighterSystem, this.atEnemySystem, this.player);
+    this.combatDroneSystem = new CombatDroneSystem(this, this.enemySystem, this.tfighterSystem, this.atEnemySystem, this.player, this.walkerEnemySystem);
 
     this.laserCannonSystem = new LaserCannonSystem(this, this.player);
 
-    this.saberSystem = new SaberSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.soundManager, this.atEnemySystem, this.walkerEnemySystem);
+    this.flamethrowerSystem = new FlamethrowerSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.soundManager, this.atEnemySystem, this.walkerEnemySystem);
     
     // Set enemy systems for laser cannon
     this.laserCannonSystem.setEnemySystems(this.enemySystem, this.atEnemySystem, this.walkerEnemySystem, this.tfighterSystem);
+
+    this.airStrikeSystem = new AirStrikeSystem(this, this.player);
+    
+    // Set enemy systems for air strike
+    this.airStrikeSystem.setEnemySystems(this.enemySystem, this.atEnemySystem, this.walkerEnemySystem, this.tfighterSystem);
     
     // Setup projectile collisions immediately after systems are created
     this.setupProjectileCollisions();
@@ -195,44 +202,56 @@ export default class MainScene extends Phaser.Scene {
     AtEnemySystem.setupAtEnemyAnimations(this);
     WalkerEnemySystem.setupWalkerAnimations(this);
     TfighterSystem.setupTfighterAnimations(this);
-    R2D2System.setupR2D2Animations(this);
-    BB8System.setupAnimations(this);
-    SaberSystem.setupFlamethrowerAnimations(this);
+    AttackChopperSystem.setupAttackChopperAnimations(this);
+    CombatDroneSystem.setupAnimations(this);
+    FlamethrowerSystem.setupFlamethrowerAnimations(this);
+    AirStrikeSystem.setupAnimations(this);
     
     // Start player idle animation after animations are set up
     this.player.startIdleAnimation();
     
-    //setup saber attacks - only start if player has saber ability
-    this.events.on('upgrade-saber', () => {
+    //setup flamethrower attacks - only start if player has flamethrower ability
+    this.events.on('upgrade-flamethrower', () => {
       const playerBody = this.player.getSprite();
       this.statsTracker.startWeaponTracking('flamethrower', 'Flamethrower', 1);
 
-      this.saberSystem.startAutoSlash(() => ({
+      this.flamethrowerSystem.startAutoSlash(() => ({
         x: playerBody.x,
         y: playerBody.y,
         facingLeft: playerBody.flipX
       }))
     });
     
-    // Setup BB-8 upgrade event listener
-    this.events.on('upgrade-bb8', () => {
-      if (!this.bb8System.isActive()) {
-        this.bb8System.unlockAndActivate();
-        this.statsTracker.startWeaponTracking('bb8', 'Combat Drone', 1);
+    // Setup Combat Drone upgrade event listener
+    this.events.on('upgrade-combat_drone', () => {
+      if (!this.combatDroneSystem.isActive()) {
+        this.combatDroneSystem.unlockAndActivate();
+        this.statsTracker.startWeaponTracking('combat_drone', 'Combat Drone', 1);
       }
     });
 
     // Track weapon unlocks
     this.events.on('upgrade-force', () => {
       this.statsTracker.startWeaponTracking('force', 'Plasma Blast', 1);
+      // Force the forceSystem to recreate its indicator after unlock
+      if (this.forceSystem && this.player.hasForceAbility()) {
+        // Use delayedCall to ensure this happens after level-up screen closes
+        this.time.delayedCall(100, () => {
+          this.forceSystem.recreateIndicator();
+        });
+      }
     });
 
-    this.events.on('upgrade-r2d2', () => {
-      this.statsTracker.startWeaponTracking('r2d2', 'Attack Chopper', 1);
+    this.events.on('upgrade-attack_chopper', () => {
+      this.statsTracker.startWeaponTracking('attack_chopper', 'Attack Chopper', 1);
     });
 
     this.events.on('upgrade-laser-cannon', () => {
       this.statsTracker.startWeaponTracking('laser_cannon', 'Laser Cannon', 1);
+    });
+
+    this.events.on('upgrade-air_strike', () => {
+      this.statsTracker.startWeaponTracking('air_strike', 'Air Strike', 1);
     });
 
     // Track relic collection - listen for when player adds relic
@@ -276,7 +295,8 @@ export default class MainScene extends Phaser.Scene {
 
     // Initialize stats tracker
     this.statsTracker = new StatsTracker();
-    // Blaster starts unlocked
+    // Blaster starts unlocked - level will be calculated from upgrades
+    // Initial level is 1 (unlocked by default), but will be updated when upgrades are applied
     this.statsTracker.startWeaponTracking('blaster', 'Blaster', 1);
 
     // Initialize particle effects system
@@ -331,8 +351,8 @@ export default class MainScene extends Phaser.Scene {
       this.particleEffects.createHitEffect(x, y, isCritical);
     });
 
-    this.events.on('saber-hit', (x: number, y: number, isCritical: boolean) => {
-      this.particleEffects.createSaberImpact(x, y, isCritical);
+    this.events.on('flamethrower-hit', (x: number, y: number, isCritical: boolean) => {
+      this.particleEffects.createFlamethrowerImpact(x, y, isCritical);
     });
 
     this.events.on('force-push', (x: number, y: number) => {
@@ -903,26 +923,35 @@ export default class MainScene extends Phaser.Scene {
       this.performanceMonitor.update(totalEnemies);
     }
 
-    //Update R2D2 system
-    if (this.player.hasR2D2Ability()) {
-      if (!this.R2D2System.isActive()) {
-        this.R2D2System.unlockAndActivate();
+    //Update Attack Chopper system
+    if (this.player.hasAttackChopperAbility()) {
+      if (!this.attackChopperSystem.isActive()) {
+        this.attackChopperSystem.unlockAndActivate();
       }
 
-      this.profileSystem('R2D2System.update', () => this.R2D2System.update(_delta));
+      this.profileSystem('AttackChopperSystem.update', () => this.attackChopperSystem.update(_delta));
     }
 
-    //Update BB-8 system
-    if (this.player.hasBB8Ability()) {
-      if (!this.bb8System.isActive()) {
-        this.bb8System.unlockAndActivate();
+    //Update Combat Drone system
+    if (this.player.hasCombatDroneAbility()) {
+      if (!this.combatDroneSystem.isActive()) {
+        this.combatDroneSystem.unlockAndActivate();
       }
 
-      this.profileSystem('bb8System.update', () => this.bb8System.update(time, _delta));
+      this.profileSystem('combatDroneSystem.update', () => this.combatDroneSystem.update(time, _delta));
     }
 
     if (this.player.hasForceAbility()) {
       this.profileSystem('forceSystem.update', () => this.forceSystem.update(time));
+    }
+
+    //Update Air Strike system
+    if (this.player.hasAirStrikeAbility()) {
+      if (!this.airStrikeSystem.isActive()) {
+        this.airStrikeSystem.unlockAndActivate();
+      }
+
+      this.profileSystem('airStrikeSystem.update', () => this.airStrikeSystem.update());
     }
 
     // Update Laser Cannon system

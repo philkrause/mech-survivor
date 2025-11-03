@@ -26,10 +26,10 @@ export class GameUI {
   // Mapping of upgrade IDs to icon image keys
   private upgradeIconMap: Map<string, string> = new Map([
     ['blaster', 'blaster_icon'], // Blaster starts unlocked
-    ['unlock_saber', 'saber_icon'], // Will use saber_icon.png if loaded
+    ['unlock_flamethrower', 'flamethrower_icon'], // Will use flamethrower_icon.png if loaded
     ['unlock_force', 'spark'], // Using spark1.png
-    ['unlock_bb8', 'bb88'], // Using bb88.png
-    ['unlock_r2d2', 'r2d2'], // Using r2d2.png
+    ['unlock_combat_drone', 'combat_drone_icon'], // Using combat_drone_icon
+    ['unlock_attack_chopper', 'attack_chopper_icon'], // Using attack_chopper_icon
   ]);
 
   constructor(scene: Phaser.Scene, player: Player) {
@@ -507,10 +507,10 @@ export class GameUI {
   private getRelicFrame(relicId: string): number {
     const relicFrameMap: { [key: string]: number } = {
       'jedi_robes': 0, // Combat Armor (keeping same frame for compatibility)
-      'lightsaber_crystal': 1, // Plasma Core (keeping same frame for compatibility)
+      'flamethrower_core': 1, // Plasma Core (keeping same frame for compatibility)
       'force_medallion': 2, // Plasma Amplifier (keeping same frame for compatibility)
       'blaster_mod': 3,
-      'r2d2_upgrade': 4, // Repair Drone Enhancement (keeping same frame for compatibility)
+      'attack_chopper_upgrade': 4, // Attack Chopper Enhancement (keeping same frame for compatibility)
       'speed_boosters': 5,
       'armor_plating': 6,
       'energy_core': 7,
@@ -681,17 +681,17 @@ export class GameUI {
     if (this.player.hasBlasterAbility()) {
       activeUpgrades.push('blaster');
     }
-    if (this.player.hasSaberAbility()) {
-      activeUpgrades.push('unlock_saber');
+    if (this.player.hasFlamethrowerAbility()) {
+      activeUpgrades.push('unlock_flamethrower');
     }
     if (this.player.hasForceAbility()) {
       activeUpgrades.push('unlock_force');
     }
-    if (this.player.hasBB8Ability()) {
-      activeUpgrades.push('unlock_bb8');
+    if (this.player.hasCombatDroneAbility()) {
+      activeUpgrades.push('unlock_combat_drone');
     }
-    if (this.player.hasR2D2Ability()) {
-      activeUpgrades.push('r2d2_droid');
+    if (this.player.hasAttackChopperAbility()) {
+      activeUpgrades.push('unlock_attack_chopper');
     }
 
     // Create icons for active upgrades

@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EnemySystem } from '../systems/EnemySystem';
 import { TfighterSystem } from '../systems/TfighterSystem';
+import { AtEnemySystem } from './AtEnemySystem';
+import { WalkerEnemySystem } from './WalkerEnemySystem';
 
 import { GAME_CONFIG } from '../config/GameConfig';
 
@@ -26,6 +28,8 @@ export class ForceSystem {
   private scene: Phaser.Scene;
   private enemySystem: EnemySystem;
   private tfighterSystem: TfighterSystem;
+  private atEnemySystem: AtEnemySystem | null = null;
+  private walkerEnemySystem: WalkerEnemySystem | null = null;
 
   private player: Player;
 
@@ -53,10 +57,12 @@ export class ForceSystem {
   private circleTweens: Phaser.Tweens.Tween[] = []; // Store tweens for cleanup
 
 
-  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player) {
+  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player, atEnemySystem?: AtEnemySystem, walkerEnemySystem?: WalkerEnemySystem) {
     this.scene = scene;
     this.enemySystem = enemySystem;
     this.tfighterSystem = tfighterSystem;
+    this.atEnemySystem = atEnemySystem || null;
+    this.walkerEnemySystem = walkerEnemySystem || null;
     this.player = player;
 
     // Create static indicator circle
@@ -73,6 +79,8 @@ export class ForceSystem {
     const { x, y } = this.player.getPosition();
     const enemies = this.enemySystem.getVisibleEnemies();
     const tfighters = this.tfighterSystem.getVisibleEnemies();
+    const atEnemies = this.atEnemySystem ? this.atEnemySystem.getVisibleEnemies() : [];
+    const walkerEnemies = this.walkerEnemySystem ? this.walkerEnemySystem.getVisibleEnemies() : [];
 
     // Emit force push particle effect
     this.scene.events.emit('force-push', x, y);
@@ -81,12 +89,18 @@ export class ForceSystem {
       const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
 
       if (dist - 10 <= this.forceConfig.endradius!) {
+        const dmg = this.forceConfig.baseDamage! * this.player.forceDamageMultiplier;
         this.enemySystem.damageEnemy(
           enemy,
-          this.forceConfig.baseDamage! * this.player.forceDamageMultiplier,
+          dmg,
           20,
           false
         );
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        if (statsTracker) {
+          statsTracker.recordWeaponDamage('force', dmg);
+        }
       }
     });
 
@@ -94,14 +108,64 @@ export class ForceSystem {
       const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
 
       if (dist - 10 <= this.forceConfig.endradius!) {
+        const dmg = this.forceConfig.baseDamage! * this.player.forceDamageMultiplier;
         this.tfighterSystem.damageEnemy(
           enemy,
-          this.forceConfig.baseDamage! * this.player.forceDamageMultiplier,
+          dmg,
           20,
           false
         );
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        if (statsTracker) {
+          statsTracker.recordWeaponDamage('force', dmg);
+        }
       }
     });
+
+    // Damage AT enemies
+    if (this.atEnemySystem) {
+      atEnemies.forEach(enemy => {
+        const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+
+        if (dist - 10 <= this.forceConfig.endradius!) {
+          const dmg = this.forceConfig.baseDamage! * this.player.forceDamageMultiplier;
+          this.atEnemySystem!.damageEnemy(
+            enemy,
+            dmg,
+            20,
+            false
+          );
+          // Track damage for stats
+          const statsTracker = (this.scene as any).statsTracker;
+          if (statsTracker) {
+            statsTracker.recordWeaponDamage('force', dmg);
+          }
+        }
+      });
+    }
+
+    // Damage Walker enemies
+    if (this.walkerEnemySystem) {
+      walkerEnemies.forEach(enemy => {
+        const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+
+        if (dist - 10 <= this.forceConfig.endradius!) {
+          const dmg = this.forceConfig.baseDamage! * this.player.forceDamageMultiplier;
+          this.walkerEnemySystem!.damageEnemy(
+            enemy,
+            dmg,
+            20,
+            false
+          );
+          // Track damage for stats
+          const statsTracker = (this.scene as any).statsTracker;
+          if (statsTracker) {
+            statsTracker.recordWeaponDamage('force', dmg);
+          }
+        }
+      });
+    }
 
     this.createVisualEffect(x, y, this.forceConfig);
     this.lastForceTime = time;
@@ -117,29 +181,38 @@ export class ForceSystem {
     this.destroyStaticIndicator();
     
     // Don't create if player doesn't have force ability yet
-    if (!this.player.hasForceAbility()) {
+    if (!this.player || !this.player.hasForceAbility()) {
       return;
     }
 
-    const { x, y } = this.player.getPosition();
-    const baseRadius = this.indicatorRadius;
-    const forceColor = this.forceConfig.color!;
+    // Safely get player position - return early if unavailable
+    try {
+      const playerPos = this.player.getPosition();
+      if (!playerPos || playerPos.x === undefined || playerPos.y === undefined) {
+        return;
+      }
+      const { x, y } = playerPos;
+      const baseRadius = this.indicatorRadius;
+      const forceColor = this.forceConfig.color!;
 
     // Create multiple circles with different sizes, opacities, and rotations
     // Outer circle - larger, more transparent, filled with color
     const outerCircle = this.scene.add.circle(x, y, baseRadius * 1.3, forceColor, 0.2);
+    outerCircle.setOrigin(0.5, 0.5); // Ensure origin is centered
     outerCircle.setDepth((this.forceConfig.depth ?? 10) - 1);
     outerCircle.setBlendMode(Phaser.BlendModes.ADD); // Glow effect
     outerCircle.setAlpha(0.4); // More transparent
     
     // Middle circle - medium size, semi-transparent
     const middleCircle = this.scene.add.circle(x, y, baseRadius, forceColor, 0.3);
+    middleCircle.setOrigin(0.5, 0.5); // Ensure origin is centered
     middleCircle.setDepth((this.forceConfig.depth ?? 10) - 1);
     middleCircle.setBlendMode(Phaser.BlendModes.ADD); // Glow effect
     middleCircle.setAlpha(0.6); // Medium transparency
     
     // Inner circle - smaller, more opaque
     const innerCircle = this.scene.add.circle(x, y, baseRadius * 0.7, forceColor, 0.4);
+    innerCircle.setOrigin(0.5, 0.5); // Ensure origin is centered
     innerCircle.setDepth((this.forceConfig.depth ?? 10) - 1);
     innerCircle.setBlendMode(Phaser.BlendModes.ADD); // Glow effect
     innerCircle.setAlpha(0.8); // Less transparent
@@ -179,8 +252,14 @@ export class ForceSystem {
       delay: 1000 // Further offset
     });
 
-    // Store tweens for cleanup
-    this.circleTweens = [outerPulse, middlePulse, innerPulse];
+      // Store tweens for cleanup
+      this.circleTweens = [outerPulse, middlePulse, innerPulse];
+    } catch (error) {
+      // If there's any error creating the indicator (e.g., during level-up screen pause),
+      // just return - updateStaticIndicator will try again when the game resumes
+      console.warn('ForceSystem: Error creating static indicator:', error);
+      return;
+    }
   }
 
   /**
@@ -209,6 +288,13 @@ export class ForceSystem {
       this.staticIndicator.destroy();
       this.staticIndicator = null;
     }
+  }
+
+  /**
+   * Public method to recreate the static indicator (called after unlock)
+   */
+  public recreateIndicator(): void {
+    this.createStaticIndicator();
   }
 
   /**

@@ -181,33 +181,17 @@ export class PlayerStatsPanel {
     // Track weapon levels
     const weaponConfig = [
       { id: 'damage', name: 'Blaster', icon: '🔫' },
-      { id: 'unlock_saber', name: 'Flamethrower', icon: '🔥' },
+      { id: 'unlock_flamethrower', name: 'Flamethrower', icon: '🔥' },
       { id: 'unlock_force', name: 'Plasma Blast', icon: '⚡' },
-      { id: 'unlock_bb8', name: 'Combat Drone', icon: '🤖' },
-      { id: 'unlock_r2d2', name: 'Attack Chopper', icon: '🚁' },
-      { id: 'unlock_laser_cannon', name: 'Laser Cannon', icon: '💥' }
+      { id: 'unlock_combat_drone', name: 'Combat Drone', icon: '🤖' },
+      { id: 'unlock_attack_chopper', name: 'Attack Chopper', icon: '🚁' },
+      { id: 'unlock_laser_cannon', name: 'Laser Cannon', icon: '💥' },
+      { id: 'unlock_air_strike', name: 'Air Strike', icon: '🚀' }
     ];
     
     weaponConfig.forEach(weapon => {
-      let level = this.upgradeSystem.getUpgradeLevel(weapon.id);
-      
-      // Check if weapon is unlocked by default (blaster)
-      if (weapon.id === 'damage') {
-        // Blaster starts unlocked, so show level 1 if no upgrades yet
-        // Level 0 means base blaster (unlocked), level 1+ means upgraded
-        level = level + 1; // Always show at least level 1 for unlocked blaster
-      } else {
-        // For unlock upgrades, level represents upgrade count
-        // Level 1 means unlocked (the unlock itself counts as level 1)
-        // Level 2+ means unlocked + additional upgrades
-        // Level 0 means not unlocked yet
-        if (level === 0) {
-          // Check if the unlock upgrade has been applied
-          // The unlock upgrade itself sets level to 1 when applied
-          level = 0; // Not unlocked yet
-        }
-        // If level > 0, weapon is unlocked (level 1 = unlocked, level 2+ = unlocked + upgrades)
-      }
+      // Use getWeaponLevel to aggregate all related upgrades (unlock + damage + speed)
+      let level = this.upgradeSystem.getWeaponLevel(weapon.id);
       
       const displayText = level > 0 ? String(level) : '—';
       const levelText = this.scene.add.text(startX + 150, y, displayText, {

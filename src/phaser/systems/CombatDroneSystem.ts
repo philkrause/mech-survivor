@@ -3,17 +3,19 @@ import { Player } from '../entities/Player';
 import { EnemySystem } from './EnemySystem';
 import { TfighterSystem } from './TfighterSystem';
 import { AtEnemySystem } from './AtEnemySystem';
+import { WalkerEnemySystem } from './WalkerEnemySystem';
 import { GAME_CONFIG } from '../config/GameConfig';
 
 /**
- * BB-8 Rolling Slash System
- * BB-8 rolls forward in a line, slicing through enemies, then returns to player
+ * Combat Drone Rolling Slash System
+ * Combat Drone rolls forward in a line, slicing through enemies, then returns to player
  */
-export class BB8System {
+export class CombatDroneSystem {
   private scene: Phaser.Scene;
   private enemySystem: EnemySystem;
   private tfighterSystem: TfighterSystem;
   private atEnemySystem: AtEnemySystem;
+  private walkerEnemySystem: WalkerEnemySystem | null = null;
   private player: Player;
   private sprite?: Phaser.GameObjects.Sprite;
   
@@ -30,14 +32,14 @@ export class BB8System {
   private currentY: number = 0;
   
   // Configuration
-  private baseDamage: number = GAME_CONFIG.BB8.BASEDAMAGE;
-  private rollSpeed: number = GAME_CONFIG.BB8.ROLL_SPEED;
-  private rollDistance: number = GAME_CONFIG.BB8.ROLL_DISTANCE;
-  private attackInterval: number = GAME_CONFIG.BB8.ATTACK_INTERVAL;
-  private hitRadius: number = GAME_CONFIG.BB8.HIT_RADIUS;
-  private followOffset: number = GAME_CONFIG.BB8.FOLLOW_OFFSET;
-  private lazyFollowSmoothing: number = GAME_CONFIG.BB8.LAZY_FOLLOW_SMOOTHING;
-  private idleWobble: number = GAME_CONFIG.BB8.IDLE_WOBBLE;
+  private baseDamage: number = GAME_CONFIG.COMBAT_DRONE.BASEDAMAGE;
+  private rollSpeed: number = GAME_CONFIG.COMBAT_DRONE.ROLL_SPEED;
+  private rollDistance: number = GAME_CONFIG.COMBAT_DRONE.ROLL_DISTANCE;
+  private attackInterval: number = GAME_CONFIG.COMBAT_DRONE.ATTACK_INTERVAL;
+  private hitRadius: number = GAME_CONFIG.COMBAT_DRONE.HIT_RADIUS;
+  private followOffset: number = GAME_CONFIG.COMBAT_DRONE.FOLLOW_OFFSET;
+  private lazyFollowSmoothing: number = GAME_CONFIG.COMBAT_DRONE.LAZY_FOLLOW_SMOOTHING;
+  private idleWobble: number = GAME_CONFIG.COMBAT_DRONE.IDLE_WOBBLE;
   
   // Timing
   private lastAttackTime: number = 0;
@@ -48,22 +50,24 @@ export class BB8System {
   // Trail effect
   private trailEffect?: Phaser.GameObjects.Graphics;
   
-  // Glow effect
-  private glowEffect?: Phaser.GameObjects.Graphics;
-  private glowTween?: Phaser.Tweens.Tween;
-  private glowAlpha: number = 0.6;
+  // Glow effect (currently disabled)
+  // private glowEffect?: Phaser.GameObjects.Graphics;
+  // private glowTween?: Phaser.Tweens.Tween;
+  // private glowAlpha: number = 0.6;
 
   constructor(
     scene: Phaser.Scene,
     enemySystem: EnemySystem,
     tfighterSystem: TfighterSystem,
     atEnemySystem: AtEnemySystem,
-    player: Player
+    player: Player,
+    walkerEnemySystem?: WalkerEnemySystem
   ) {
     this.scene = scene;
     this.enemySystem = enemySystem;
     this.tfighterSystem = tfighterSystem;
     this.atEnemySystem = atEnemySystem;
+    this.walkerEnemySystem = walkerEnemySystem || null;
     this.player = player;
   }
 
@@ -83,49 +87,95 @@ export class BB8System {
   }
 
   /**
-   * Unlock and activate BB-8
+   * Unlock and activate Combat Drone
    */
   unlockAndActivate(): void {
     if (this.active) return;
     
-    const { x, y } = this.player.getPosition();
-    
-    // Create sprite using BattleDrone spritesheet
-    this.sprite = this.scene.add.sprite(x, y, 'battledrone', 0);
-    this.sprite.setScale(GAME_CONFIG.BB8.SCALE);
-    this.sprite.setDepth(GAME_CONFIG.BB8.DEPTH);
-    
-    // Play walk animation
-    if (this.scene.anims.exists('battledrone_walk')) {
-      this.sprite.anims.play('battledrone_walk', true);
+    // If game is paused (e.g., during upgrade screen), defer initialization
+    // This prevents issues with sprite creation or time.now during pause
+    // Use window.setTimeout since Phaser timers don't work when paused
+    if (this.scene.time.paused) {
+      window.setTimeout(() => {
+        // Check again if still paused (might have been unpaused)
+        if (!this.scene.time.paused && !this.active) {
+          this.unlockAndActivate();
+        }
+      }, 100);
+      return;
     }
     
-    // Create glow effect
-    this.createGlow();
-    
-    this.active = true;
-    this.lastAttackTime = this.scene.time.now;
-    
-    // Position at offset from player initially (to the right/behind player)
-    this.currentX = x + this.followOffset;
-    this.currentY = y - 20;
+    try {
+      const { x, y } = this.player.getPosition();
+      
+      // Create sprite using BattleDrone spritesheet
+      this.sprite = this.scene.add.sprite(x, y, 'battledrone', 0);
+      this.sprite.setScale(GAME_CONFIG.COMBAT_DRONE.SCALE);
+      this.sprite.setDepth(GAME_CONFIG.COMBAT_DRONE.DEPTH);
+      
+      // Play walk animation
+      if (this.scene.anims.exists('battledrone_walk')) {
+        this.sprite.anims.play('battledrone_walk', true);
+      }
+      
+      // Create glow effect
+      //this.createGlow();
+      
+      this.active = true;
+      this.lastAttackTime = this.scene.time.now;
+      
+      // Position at offset from player initially (to the right/behind player)
+      this.currentX = x + this.followOffset;
+      this.currentY = y - 20;
+    } catch (error) {
+      console.error('CombatDroneSystem: Error during unlockAndActivate:', error);
+      // Reset active state on error so it can be retried
+      this.active = false;
+    }
   }
 
   /**
-   * Check if BB-8 is active
+   * Check if Combat Drone is active
    */
   isActive(): boolean {
     return this.active;
   }
 
   /**
-   * Update BB-8 system
+   * Update Combat Drone system
    */
   update(time: number, delta: number): void {
+    // Don't update if game is paused (e.g., during level-up or relic screen)
+    if (this.scene.time.paused) {
+      // If an attack is in progress, stop it immediately when paused
+      if (this.isRolling || this.isReturning) {
+        this.isRolling = false;
+        this.isReturning = false;
+        // Clean up trail if active
+        if (this.trailEffect) {
+          this.destroyTrail();
+        }
+        // Move sprite back to safe position near player to prevent collisions
+        if (this.sprite && this.player) {
+          try {
+            const { x, y } = this.player.getPosition();
+            const playerFacingLeft = this.player.getFlippedX();
+            const offsetX = this.followOffset * (playerFacingLeft ? -1 : 1);
+            this.currentX = x + offsetX;
+            this.currentY = y - 20;
+            this.sprite.setPosition(this.currentX, this.currentY);
+          } catch (error) {
+            // Player position might not be available during pause, ignore
+          }
+        }
+      }
+      return;
+    }
+    
     if (!this.active || !this.sprite || !this.player) return;
 
     const { x: playerX, y: playerY } = this.player.getPosition();
-    const actualInterval = this.attackInterval * this.player.bb8SpeedMultiplier;
+    const actualInterval = this.attackInterval * this.player.combatDroneSpeedMultiplier;
     
     // Check if it's time to attack
     if (!this.isRolling && !this.isReturning && time - this.lastAttackTime >= actualInterval) {
@@ -146,13 +196,16 @@ export class BB8System {
     this.updateTrail();
     
     // Update glow effect position
-    this.updateGlow();
+    //this.updateGlow();
   }
 
   /**
    * Start a rolling attack
    */
   private startRoll(startX: number, startY: number): void {
+    // Don't start attack if game is paused
+    if (this.scene.time.paused) return;
+    
     this.startX = startX;
     this.startY = startY;
     this.currentX = startX;
@@ -184,6 +237,9 @@ export class BB8System {
    * Update rolling movement
    */
   private updateRoll(delta: number): void {
+    // Don't update if game is paused
+    if (this.scene.time.paused) return;
+    
     if (!this.sprite) return;
 
     // Calculate progress
@@ -220,7 +276,7 @@ export class BB8System {
     // Update glow position
     this.updateGlowPosition();
     
-    // Keep BB-8 upright during roll (no rotation)
+    // Keep Combat Drone upright during roll (no rotation)
     if (this.sprite.rotation !== undefined) {
       this.sprite.rotation = 0;
     }
@@ -233,6 +289,9 @@ export class BB8System {
    * Update returning to follow position near player
    */
   private updateReturn(delta: number, playerX: number, playerY: number): void {
+    // Don't update if game is paused
+    if (this.scene.time.paused) return;
+    
     if (!this.sprite) return;
 
     // Calculate target position at offset from player (behind/to the right)
@@ -279,7 +338,7 @@ export class BB8System {
     // Update glow position
     this.updateGlowPosition();
     
-    // Keep BB-8 upright (no rotation while returning)
+    // Keep Combat Drone upright (no rotation while returning)
     if (this.sprite.rotation !== undefined) {
       this.sprite.rotation = 0;
     }
@@ -319,7 +378,7 @@ export class BB8System {
       this.currentY += wobbleY;
     }
 
-    // Keep BB-8 upright (no rotation)
+    // Keep Combat Drone upright (no rotation)
     if (this.sprite.rotation !== undefined) {
       this.sprite.rotation = 0;
     }
@@ -335,9 +394,12 @@ export class BB8System {
    * Check for enemy collisions during roll
    */
   private checkEnemyCollisions(): void {
+    // Don't check collisions if game is paused
+    if (this.scene.time.paused) return;
+    
     if (!this.sprite) return;
 
-    const damage = this.baseDamage * this.player.bb8DamageMultiplier;
+    const damage = this.baseDamage * this.player.combatDroneDamageMultiplier;
 
     // Check regular enemies
     const enemies = this.enemySystem.getVisibleEnemies();
@@ -351,9 +413,14 @@ export class BB8System {
       
       if (dist < this.hitRadius && !this.hitEnemiesThisRoll.has(enemy)) {
         this.enemySystem.damageEnemy(enemy, damage, 0, false);
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        if (statsTracker) {
+          statsTracker.recordWeaponDamage('combat_drone', damage);
+        }
         this.hitEnemiesThisRoll.add(enemy);
         // Emit hit effect
-        this.scene.events.emit('bb8-hit', enemy.x, enemy.y);
+        this.scene.events.emit('combat_drone-hit', enemy.x, enemy.y);
       }
     });
 
@@ -369,8 +436,13 @@ export class BB8System {
       
       if (dist < this.hitRadius && !this.hitEnemiesThisRoll.has(enemy)) {
         this.tfighterSystem.damageEnemy(enemy, damage, 0, false);
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        if (statsTracker) {
+          statsTracker.recordWeaponDamage('combat_drone', damage);
+        }
         this.hitEnemiesThisRoll.add(enemy);
-        this.scene.events.emit('bb8-hit', enemy.x, enemy.y);
+        this.scene.events.emit('combat_drone-hit', enemy.x, enemy.y);
       }
     });
 
@@ -386,10 +458,39 @@ export class BB8System {
       
       if (dist < this.hitRadius && !this.hitEnemiesThisRoll.has(enemy)) {
         this.atEnemySystem.damageEnemy(enemy, damage, 0, false);
+        // Track damage for stats
+        const statsTracker = (this.scene as any).statsTracker;
+        if (statsTracker) {
+          statsTracker.recordWeaponDamage('combat_drone', damage);
+        }
         this.hitEnemiesThisRoll.add(enemy);
-        this.scene.events.emit('bb8-hit', enemy.x, enemy.y);
+        this.scene.events.emit('combat_drone-hit', enemy.x, enemy.y);
       }
     });
+
+    // Check Walker enemies
+    if (this.walkerEnemySystem) {
+      const walkerEnemies = this.walkerEnemySystem.getVisibleEnemies();
+      walkerEnemies.forEach(enemy => {
+        const dist = Phaser.Math.Distance.Between(
+          this.currentX,
+          this.currentY,
+          enemy.x,
+          enemy.y
+        );
+        
+        if (dist < this.hitRadius && !this.hitEnemiesThisRoll.has(enemy)) {
+          this.walkerEnemySystem!.damageEnemy(enemy, damage, 0, false);
+          // Track damage for stats
+          const statsTracker = (this.scene as any).statsTracker;
+          if (statsTracker) {
+            statsTracker.recordWeaponDamage('combat_drone', damage);
+          }
+          this.hitEnemiesThisRoll.add(enemy);
+          this.scene.events.emit('combat_drone-hit', enemy.x, enemy.y);
+        }
+      });
+    }
   }
 
   /**
@@ -403,7 +504,8 @@ export class BB8System {
     const allEnemies = [
       ...this.enemySystem.getVisibleEnemies(),
       ...this.tfighterSystem.getVisibleEnemies(),
-      ...this.atEnemySystem.getVisibleEnemies()
+      ...this.atEnemySystem.getVisibleEnemies(),
+      ...(this.walkerEnemySystem ? this.walkerEnemySystem.getVisibleEnemies() : [])
     ];
 
     allEnemies.forEach(enemy => {
@@ -426,7 +528,7 @@ export class BB8System {
     }
     
     this.trailEffect = this.scene.add.graphics();
-    this.trailEffect.setDepth(GAME_CONFIG.BB8.DEPTH - 1);
+    this.trailEffect.setDepth(GAME_CONFIG.COMBAT_DRONE.DEPTH - 1);
   }
 
   /**
@@ -470,60 +572,59 @@ export class BB8System {
   /**
    * Create glow effect around combat drone
    */
-  private createGlow(): void {
-    if (!this.sprite) return;
+  // private createGlow(): void {
+  //   if (!this.sprite) return;
     
-    // Create graphics object for glow
-    this.glowEffect = this.scene.add.graphics();
-    this.glowEffect.setDepth(GAME_CONFIG.BB8.DEPTH - 1); // Behind the drone sprite
+  //   // Create graphics object for glow
+  //   this.glowEffect = this.scene.add.graphics();
+  //   this.glowEffect.setDepth(GAME_CONFIG.COMBAT_DRONE.DEPTH - 1); // Behind the drone sprite
     
-    // Draw initial glow (will be updated in updateGlow)
-    this.updateGlow();
+  //   // Draw initial glow (will be updated in updateGlow)
+  //   this.updateGlow();
     
-    // Create pulsing tween for glow
-    const glowObj = { alpha: 0.6 };
-    this.glowTween = this.scene.tweens.add({
-      targets: glowObj,
-      alpha: { from: 0.4, to: 0.8 },
-      duration: 1500,
-      ease: 'Sine.easeInOut',
-      repeat: -1,
-      yoyo: true,
-      onUpdate: () => {
-        if (this.glowEffect && glowObj) {
-          this.glowAlpha = glowObj.alpha;
-          this.updateGlow(this.glowAlpha);
-        }
-      }
-    });
-  }
+  //   // Create pulsing tween for glow
+  //   const glowObj = { alpha: 0.6 };
+  //   this.glowTween = this.scene.tweens.add({
+  //     targets: glowObj,
+  //     alpha: { from: 0.4, to: 0.8 },
+  //     duration: 1500,
+  //     ease: 'Sine.easeInOut',
+  //     repeat: -1,
+  //     yoyo: true,
+  //     onUpdate: () => {
+  //       if (this.glowEffect && glowObj) {
+  //         this.glowAlpha = glowObj.alpha;
+  //         this.updateGlow(this.glowAlpha);
+  //       }
+  //     }
+  //   });
+  // }
 
   /**
    * Update glow effect
    */
-  private updateGlow(alpha: number = 0.6): void {
-    if (!this.glowEffect || !this.sprite) return;
+  // private updateGlow(alpha: number = 0.6): void {
+  //   if (!this.glowEffect || !this.sprite) return;
     
-    this.glowEffect.clear();
+  //   this.glowEffect.clear();
     
-    // Draw outer glow (orange/yellow)
-    this.glowEffect.fillStyle(0xff8800, alpha); // Orange glow
-    this.glowEffect.fillCircle(this.currentX, this.currentY, 32); // Larger outer glow
+  //   // Draw outer glow (orange/yellow)
+  //   this.glowEffect.fillStyle(0xff8800, alpha); // Orange glow
+  //   this.glowEffect.fillCircle(this.currentX, this.currentY, 32); // Larger outer glow
     
-    // Draw inner glow (white/brighter)
-    this.glowEffect.fillStyle(0xffffff, alpha * 0.5); // White inner glow
-    this.glowEffect.fillCircle(this.currentX, this.currentY, 20); // Smaller inner glow
-  }
+  //   // Draw inner glow (white/brighter)
+  //   this.glowEffect.fillStyle(0xffffff, alpha * 0.5); // White inner glow
+  //   this.glowEffect.fillCircle(this.currentX, this.currentY, 20); // Smaller inner glow
+  // }
 
   /**
    * Update glow position to follow sprite
    */
   private updateGlowPosition(): void {
-    if (!this.glowEffect || !this.sprite) return;
-    
-    // Glow position is updated in updateGlow using currentX/currentY
-    // Use current glow alpha value
-    this.updateGlow(this.glowAlpha);
+    // Glow effect is currently disabled (commented out in createGlow)
+    // This method is kept for future use when glow is re-enabled
+    // if (!this.glowEffect || !this.sprite) return;
+    // this.updateGlow(this.glowAlpha);
   }
 
   /**
@@ -536,15 +637,15 @@ export class BB8System {
     }
     this.destroyTrail();
     
-    // Destroy glow effect
-    if (this.glowTween) {
-      this.glowTween.stop();
-      this.glowTween = undefined;
-    }
-    if (this.glowEffect) {
-      this.glowEffect.destroy();
-      this.glowEffect = undefined;
-    }
+    // Destroy glow effect (currently disabled)
+    // if (this.glowTween) {
+    //   this.glowTween.stop();
+    //   this.glowTween = undefined;
+    // }
+    // if (this.glowEffect) {
+    //   this.glowEffect.destroy();
+    //   this.glowEffect = undefined;
+    // }
     
     this.active = false;
   }

@@ -45,8 +45,9 @@ const Game: React.FC = () => {
         pixelArt: true,
         roundPixels: true,
         powerPreference: 'high-performance', // Request high performance GPU
+        transparent: true, // Allow page background to show through
       },
-      backgroundColor: '#1d1805',
+      backgroundColor: 'transparent',
       fps: {
         target: 60,
         forceSetTimeOut: false, // Don't use setTimeout throttling

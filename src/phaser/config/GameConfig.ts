@@ -34,8 +34,8 @@ export const GAME_CONFIG = {
     SPEED: 50,
     SCALE: 1,
     DEPTH: 5,
-    SPAWN_INTERVAL: 1000, // ms between spawns (base interval)
-    MAX_COUNT: 1000,
+    SPAWN_INTERVAL: 500, // ms between spawns (base interval)
+    MAX_COUNT: 10000,
     SPAWN_PADDING: 20, // Distance from edge
     HITBOX_SCALE: .75,
     TINT: 0xff0000,
@@ -47,12 +47,13 @@ export const GAME_CONFIG = {
     RELIC_DROP_CHANCE: 0.01, // Chance (0-1) for relic drop on death
     // Spawn rate scaling
     LEVEL_SCALING: {
-      REDUCTION_PER_LEVEL: 0.25, // 25% reduction per level (e.g., level 2 = 75% of base, level 3 = 50% of base)
-      MIN_REDUCTION_FACTOR: 0.3, // Minimum 30% of base interval (prevents going below this)
+      REDUCTION_PER_LEVEL: 0.5, // 25% reduction per level (e.g., level 2 = 75% of base, level 3 = 50% of base)
+      MIN_REDUCTION_FACTOR: 1, // Minimum 30% of base interval (prevents going below this)
     },
     TIME_SCALING: {
-      REDUCTION_PER_MINUTE: 0.2, // 10% reduction per minute (e.g., 1 min = 90% of base, 2 min = 80% of base)
-      MAX_REDUCTION: 0.5, // Maximum 50% reduction from time alone (interval never goes below 50% of base from time)
+      REDUCTION_PER_MINUTE: 0.5, // 50% reduction per minute - reaches max reduction in 1 minute (1 min = 50% of base)
+      MAX_REDUCTION: 1, // Maximum 50% reduction from time alone (interval never goes below 50% of base from time)
+      // Note: With 0.5 per minute, spawn interval is 100% of base at 0 min, then 50% of base from 1 min onwards
     },
     // Enemy type unlocks by level
     TYPE_UNLOCKS: {
@@ -91,19 +92,19 @@ export const GAME_CONFIG = {
     KNOCKBACK_FORCE: 300, // Force applied when hit
     KNOCKBACK_DURATION: 200, // ms of knockback effect
     EXPERIENCE_DROP_CHANCE: 1, // Chance (0-1) of dropping an experience orb
-    RELIC_DROP_CHANCE: 0.08 // Chance (0-1) for relic drop on death
+    RELIC_DROP_CHANCE: 0.01 // Chance (0-1) for relic drop on death
   },
   AT: {
     SPAWN_INTERVAL: 2000, // ms between spawns (base interval)
     MAX_COUNT: 10, // Maximum number of AT enemies at once
     MIN_LEVEL: 2, // Minimum player level before AT enemies spawn
-    RELIC_DROP_CHANCE: 0.15
+    RELIC_DROP_CHANCE: 0.01
   },
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
     MAX_COUNT: 8, // Maximum number of Walker enemies at once
     MIN_LEVEL: 8, // Minimum player level before Walker enemies spawn
-    RELIC_DROP_CHANCE: 0.15,
+    RELIC_DROP_CHANCE: 0.01,
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)
     LASER_DURATION: 2000, // ms - total laser duration (aiming + firing)
@@ -151,21 +152,21 @@ export const GAME_CONFIG = {
   FORCE: {
     PLAYER: {
       KEY: 'player_force',
-      BASEDAMAGE: 10,
+      BASEDAMAGE: 20,
       RADIUS: 10,
-      ENDRADIUS: 100,
-      STRENGTH: 1,
+      ENDRADIUS: 150,
+      STRENGTH: 2,
       FADEDURATION: 500,
       COLOR: 0xaa00ff,
       ALPHA: .5,
-      MAXSIZE: 100,
+      MAXSIZE: 200,
       SCALE: 2,
       DEPTH: 3,
       LIFESPAN: 500, // ms
       TINT: 0xaa00ff, // purple color
     },
   },
-  SABER: {
+  FLAMETHROWER: {
     PLAYER: {
       KEY: 'blue_slash',
       DURATION: 600,
@@ -183,13 +184,13 @@ export const GAME_CONFIG = {
     },
   },
 
-  BB8: {
+  COMBAT_DRONE: {
     SCALE: 1.0, // Increased from 0.75 for larger combat drone
     DEPTH: 5,
-    BASEDAMAGE: 10, // Base damage per hit
-    ROLL_SPEED: 400, // Pixels per second
-    ROLL_DISTANCE: 300, // Maximum roll distance
-    ATTACK_INTERVAL: 3000, // ms between attacks
+    BASEDAMAGE: 20, // Base damage per hit
+    ROLL_SPEED: 600, // Pixels per second
+    ROLL_DISTANCE: 500, // Maximum roll distance
+    ATTACK_INTERVAL: 1000, // ms between attacks
     HIT_RADIUS: 25, // Hit detection radius
     FOLLOW_OFFSET: 40, // Distance to maintain from player when idle
     LAZY_FOLLOW_SPEED: 200, // Speed for lazy follow (unused, kept for compatibility)
@@ -199,11 +200,19 @@ export const GAME_CONFIG = {
 
   // Ability unlock levels
   ABILITIES: {
-    R2D2_UNLOCK_LEVEL: 2, // Level at which Attack Chopper ability unlocks
-    FORCE_UNLOCK_LEVEL: 2, // Level at which Plasma Blast ability unlocks
-    SABER_UNLOCK_LEVEL: 2, // Level at which Flamethrower ability unlocks
-    BB8_UNLOCK_LEVEL: 2, // Level at which Combat Drone ability unlocks
-    LASER_CANNON_UNLOCK_LEVEL: 2, // Level at which Laser Cannon ability unlocks
+    ATTACK_CHOPPER_UNLOCK_LEVEL: 3, // Level at which Attack Chopper ability unlocks
+    FORCE_UNLOCK_LEVEL: 3, // Level at which Plasma Blast ability unlocks
+    FLAMETHROWER_UNLOCK_LEVEL: 3, // Level at which Flamethrower ability unlocks
+    COMBAT_DRONE_UNLOCK_LEVEL: 3, // Level at which Combat Drone ability unlocks
+    LASER_CANNON_UNLOCK_LEVEL: 3, // Level at which Laser Cannon ability unlocks
+    AIR_STRIKE_UNLOCK_LEVEL: 2, // Level at which Air Strike ability unlocks
+  },
+  AIR_STRIKE: {
+    FIRE_INTERVAL: 8000, // ms between air strikes
+    MISSILE_SPEED: 2000, // pixels per second (increased for faster travel)
+    DROP_TIME: 2000, // ms for missile to drop (calculated from speed)
+    IMPACT_RADIUS: 100, // pixels - damage radius
+    BASEDAMAGE: 50, // Base damage per strike
   },
   LASER_CANNON: {
     FIRE_INTERVAL: 3000, // ms between laser shots

@@ -33,9 +33,9 @@ export class Player {
 
   // Upgrade properties
 
-  public saberSpeedMultiplier: number = 1.0;
-  public saberDamageMultiplier: number = 1.0;
-  public saberCritChance: number = 0; // Crit chance from relics
+  public flamethrowerSpeedMultiplier: number = 1.0;
+  public flamethrowerDamageMultiplier: number = 1.0;
+  public flamethrowerCritChance: number = 0; // Crit chance from relics
 
   // Additional upgrade properties
   public speedMultiplier: number = 1.0;
@@ -43,11 +43,12 @@ export class Player {
   public projectileSpeedMultiplier: number = 1.0;
 
   private hasForceUpgrade: boolean = false;
-  private hasR2D2Upgrade: boolean = false;
-  private hasBB8Upgrade: boolean = false;
+  private hasAttackChopperUpgrade: boolean = false;
+  private hasCombatDroneUpgrade: boolean = false;
   public hasBlasterUpgrade: boolean = true; // Start with blaster unlocked
-  private hasSaberUpgrade: boolean = false; // Saber starts locked
+  private hasFlamethrowerUpgrade: boolean = false; // Flamethrower starts locked
   private hasLaserCannonUpgrade: boolean = false; // Laser Cannon starts locked
+  private hasAirStrikeUpgrade: boolean = false; // Air Strike starts locked
   
   // Stress test mode
   private isStressTestMode: boolean = false;
@@ -57,12 +58,15 @@ export class Player {
   private damageReduction: number = 0; // Track damage reduction from relics
 
 
-  public R2D2SpeedMultiplier: number = 1.0;
-  private R2D2StrengthMultiplier: number = 1.0;
-  public R2D2DamageMultiplier: number = 1.0;
+  public attackChopperSpeedMultiplier: number = 1.0;
+  private attackChopperStrengthMultiplier: number = 1.0;
+  public attackChopperDamageMultiplier: number = 1.0;
 
-  public bb8SpeedMultiplier: number = 1.0;
-  public bb8DamageMultiplier: number = 1.0;
+  public combatDroneSpeedMultiplier: number = 1.0;
+  public combatDroneDamageMultiplier: number = 1.0;
+  
+  public airStrikeSpeedMultiplier: number = 1.0;
+  public airStrikeDamageMultiplier: number = 1.0;
 
   public forceSpeedMultiplier: number = 1.0;
   private forceStrengthMultiplier: number = 1.0;
@@ -319,7 +323,7 @@ export class Player {
   }
   
   /**
-   * Add visual enhancements to projectile - line-based trail like BB8
+   * Add visual enhancements to projectile - line-based trail like Combat Drone
    */
   private addProjectileTrail(projectile: Phaser.Physics.Arcade.Sprite): void {
     // Keep projectile at normal size (removed 2x scaling)
@@ -693,7 +697,13 @@ export class Player {
    * Get the player's current position
    */
   getPosition(): { x: number, y: number } {
-    return { x: this.sprite.x, y: this.sprite.y };
+    // Return sprite center position (accounting for origin)
+    // If origin is (0,0), we need to add half the display size
+    // If origin is (0.5,0.5), sprite.x,y is already the center
+    // Phaser sprites default to (0.5, 0.5) so this should already be centered
+    // But to be safe, we'll use getCenter() which always returns the visual center
+    const center = this.sprite.getCenter();
+    return { x: center.x, y: center.y };
   }
 
   getVelocity(): Phaser.Math.Vector2 {
@@ -1234,22 +1244,22 @@ increaseBlasterDamage(multiplier: number): void {
 }
 
 
-unlockR2D2Upgrade() {
-  this.hasR2D2Upgrade = true;
-  // R2D2 upgrade unlocked
+unlockAttackChopperUpgrade() {
+  this.hasAttackChopperUpgrade = true;
+  // Attack Chopper upgrade unlocked
 }
 
-hasR2D2Ability(): boolean {
-  return this.hasR2D2Upgrade;
+hasAttackChopperAbility(): boolean {
+  return this.hasAttackChopperUpgrade;
 }
 
-unlockBB8Upgrade(): void {
-  this.hasBB8Upgrade = true;
-  // BB-8 upgrade unlocked
+unlockCombatDroneUpgrade(): void {
+  this.hasCombatDroneUpgrade = true;
+  // Combat Drone upgrade unlocked
 }
 
-hasBB8Ability(): boolean {
-  return this.hasBB8Upgrade;
+hasCombatDroneAbility(): boolean {
+  return this.hasCombatDroneUpgrade;
 }
 
 unlockLaserCannonUpgrade(): void {
@@ -1260,16 +1270,25 @@ hasLaserCannonAbility(): boolean {
   return this.hasLaserCannonUpgrade;
 }
 
-unlockSaberUpgrade(): void {
-  this.hasSaberUpgrade = true;
-  this.switchToSaberAnimation();
-  // Saber upgrade unlocked
+unlockAirStrikeUpgrade(): void {
+  this.hasAirStrikeUpgrade = true;
+  // Air Strike upgrade unlocked
+}
+
+hasAirStrikeAbility(): boolean {
+  return this.hasAirStrikeUpgrade;
+}
+
+unlockFlamethrowerUpgrade(): void {
+  this.hasFlamethrowerUpgrade = true;
+  this.switchToFlamethrowerAnimation();
+  // Flamethrower upgrade unlocked
 }
 
 /**
- * Switch to saber animation
+ * Switch to flamethrower animation
  */
-private switchToSaberAnimation(): void {
+private switchToFlamethrowerAnimation(): void {
   this.currentAnimationKey = 'player_walk_right_with_saber';
   // If currently moving, immediately switch to the new animation
   if (this.sprite.anims && this.sprite.anims.isPlaying && this.sprite.anims.exists(this.currentAnimationKey)) {
@@ -1277,8 +1296,8 @@ private switchToSaberAnimation(): void {
   }
 }
 
-hasSaberAbility(): boolean {
-  return this.hasSaberUpgrade;
+hasFlamethrowerAbility(): boolean {
+  return this.hasFlamethrowerUpgrade;
 }
 
 /**
@@ -1305,9 +1324,9 @@ private applyRelicEffect(relicId: string): void {
     case 'kyber_crystal':
       // Increase all weapon damage by 25%
       this.damageBlasterMultiplier *= 1.25;
-      this.saberDamageMultiplier *= 1.25;
+      this.flamethrowerDamageMultiplier *= 1.25;
       this.forceDamageMultiplier *= 1.25;
-      this.R2D2DamageMultiplier *= 1.25;
+      this.attackChopperDamageMultiplier *= 1.25;
       break;
       
     case 'jedi_robes':
@@ -1323,40 +1342,40 @@ private applyRelicEffect(relicId: string): void {
       break;
       
     case 'droid_companion':
-      // R2-D2 abilities 30% more effective
-      this.R2D2DamageMultiplier *= 1.3;
-      this.R2D2SpeedMultiplier *= 1.3;
+      // Attack Chopper abilities 30% more effective
+      this.attackChopperDamageMultiplier *= 1.3;
+      this.attackChopperSpeedMultiplier *= 1.3;
       break;
       
     case 'lightsaber_crystal':
-      // Saber attacks have 15% chance to crit
-      this.saberCritChance += 0.15;
-      // Saber crit chance increased
+      // Flamethrower attacks have 15% chance to crit
+      this.flamethrowerCritChance += 0.15;
+      // Flamethrower crit chance increased
       break;
   }
 }
 
-increaseR2D2Damage(multiplier: number): void {
-  this.hasR2D2Upgrade = true;
-  this.R2D2DamageMultiplier += multiplier;
-  // Increased R2D2 damage
+increaseAttackChopperDamage(multiplier: number): void {
+  this.hasAttackChopperUpgrade = true;
+  this.attackChopperDamageMultiplier += multiplier;
+  // Increased Attack Chopper damage
 }
 
-increaseBB8Speed(multiplier: number): void {
-  this.hasBB8Upgrade = true;
-  this.bb8SpeedMultiplier *= multiplier;
-  // Increased BB-8 speed (reduces attack interval)
+increaseCombatDroneSpeed(multiplier: number): void {
+  this.hasCombatDroneUpgrade = true;
+  this.combatDroneSpeedMultiplier *= multiplier;
+  // Increased Combat Drone speed (reduces attack interval)
 }
 
-increaseBB8Damage(multiplier: number): void {
-  this.hasBB8Upgrade = true;
-  this.bb8DamageMultiplier += multiplier;
-  // Increased BB-8 damage
+increaseCombatDroneDamage(multiplier: number): void {
+  this.hasCombatDroneUpgrade = true;
+  this.combatDroneDamageMultiplier += multiplier;
+  // Increased Combat Drone damage
 }
 
 // Get the multiplier for force strength
-getR2D2StrengthMultiplier(): number {
-  return this.R2D2StrengthMultiplier;
+getAttackChopperStrengthMultiplier(): number {
+  return this.attackChopperStrengthMultiplier;
 }
 
 
@@ -1371,9 +1390,9 @@ increaseDamageReduction(multiplier: number): void {
   // Increased damage reduction
 }
 
-increaseSaberCritChance(multiplier: number): void {
-  this.saberCritChance += multiplier;
-  // Increased saber crit chance
+increaseFlamethrowerCritChance(multiplier: number): void {
+  this.flamethrowerCritChance += multiplier;
+  // Increased flamethrower crit chance
 }
 
 increaseForceSpeed(multiplier: number): void {
@@ -1388,14 +1407,26 @@ getForceStrengthMultiplier(): number {
 
 
 //UPGRADEs
-increaseSaberDamage(multiplier: number): void {
-  this.saberDamageMultiplier += multiplier;
-  // Increased saber damage
+increaseFlamethrowerDamage(multiplier: number): void {
+  this.flamethrowerDamageMultiplier += multiplier;
+  // Increased flamethrower damage
 }
 
-increaseSaberSpeed(multiplier: number): void {
-  this.saberSpeedMultiplier *= multiplier;
-  // Increased saber speed
+increaseFlamethrowerSpeed(multiplier: number): void {
+  this.flamethrowerSpeedMultiplier *= multiplier;
+  // Increased flamethrower speed
+}
+
+increaseAirStrikeSpeed(multiplier: number): void {
+  this.hasAirStrikeUpgrade = true;
+  this.airStrikeSpeedMultiplier *= multiplier;
+  // Increased air strike speed (reduces fire interval)
+}
+
+increaseAirStrikeDamage(multiplier: number): void {
+  this.hasAirStrikeUpgrade = true;
+  this.airStrikeDamageMultiplier += multiplier;
+  // Increased air strike damage
 }
 
 deathVisual(): void {

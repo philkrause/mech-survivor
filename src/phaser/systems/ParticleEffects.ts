@@ -182,9 +182,9 @@ export class ParticleEffects {
   }
 
   /**
-   * Create saber slash impact effect
+   * Create flamethrower slash impact effect
    */
-  public createSaberImpact(x: number, y: number, isCritical: boolean = false): void {
+  public createFlamethrowerImpact(x: number, y: number, isCritical: boolean = false): void {
     if (!this.enabled) return;
     
     // Check if impact is on-screen (within camera bounds + some margin)
@@ -200,7 +200,7 @@ export class ParticleEffects {
     const color = isCritical ? 0x00ffff : 0x0088ff; // Cyan for crit, blue for normal
     const particleCount = isCritical ? 10 : 6;
 
-    const saberParticles = this.scene.add.particles(x, y, 'spark', {
+    const flamethrowerParticles = this.scene.add.particles(x, y, 'spark', {
       speed: { min: 50, max: 120 },
       scale: { start: 0.6, end: 0 },
       quantity: particleCount,
@@ -210,12 +210,12 @@ export class ParticleEffects {
       blendMode: Phaser.BlendModes.ADD
     });
 
-    // Light screen shake for saber hits
+    // Light screen shake for flamethrower hits
     this.scene.cameras.main.shake(40, 0.008);
 
     // Auto-destroy particles
     this.scene.time.delayedCall(400, () => {
-      saberParticles.destroy();
+      flamethrowerParticles.destroy();
     });
   }
 

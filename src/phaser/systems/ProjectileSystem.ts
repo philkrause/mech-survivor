@@ -167,11 +167,11 @@ export class ProjectileSystem {
         case 'force':
           damageMultiplier = this.player.forceDamageMultiplier || 1.0;
           break;
-        case 'r2d2':
-          damageMultiplier = this.player.R2D2DamageMultiplier || 1.0;
+        case 'attack_chopper':
+          damageMultiplier = this.player.attackChopperDamageMultiplier || 1.0;
           break;
-        case 'saber':
-          damageMultiplier = this.player.saberDamageMultiplier || 1.0;
+        case 'flamethrower':
+          damageMultiplier = this.player.flamethrowerDamageMultiplier || 1.0;
           break;
       }
     }

@@ -8,7 +8,7 @@ import { SoundManager } from '../utils/SoundManager';
 
 import { Player } from '../entities/Player';
 
-export interface SaberSlashConfig {
+export interface FlamethrowerConfig {
   key: string;                // Texture key
   duration: number;           // Animation duration (ms)
   scale: number;              // Initial scale
@@ -23,7 +23,7 @@ export interface SaberSlashConfig {
   damageMultiplier?: number; // Damage multiplier
 }
 
-export class SaberSystem {
+export class FlamethrowerSystem {
   private scene: Phaser.Scene;
   private slashes: Phaser.GameObjects.Sprite[] = [];
   private slashTimer?: Phaser.Time.TimerEvent;
@@ -36,20 +36,20 @@ export class SaberSystem {
 
 
 
-  // DEFAULT SABER CONFIG
-  private saberSlashConfig: SaberSlashConfig = {
+  // DEFAULT FLAMETHROWER CONFIG
+  private flamethrowerConfig: FlamethrowerConfig = {
     key: 'blue_slash',
-    duration: GAME_CONFIG.SABER.PLAYER.DURATION,
-    scale: GAME_CONFIG.SABER.PLAYER.SCALE,
-    depth: GAME_CONFIG.SABER.PLAYER.DEPTH,
-    basedamage: GAME_CONFIG.SABER.PLAYER.BASEDAMAGE,
-    width: GAME_CONFIG.SABER.PLAYER.WIDTH,
-    height: GAME_CONFIG.SABER.PLAYER.HEIGHT,
-    offsetX: GAME_CONFIG.SABER.PLAYER.OFFSETX,
-    offsetY: GAME_CONFIG.SABER.PLAYER.OFFSETY,
-    interval: GAME_CONFIG.SABER.PLAYER.INTERVAL,
-    growScale: GAME_CONFIG.SABER.PLAYER.GROWSCALE,
-    damageMultiplier: GAME_CONFIG.SABER.PLAYER.DAMAGEMULTIPLIER,
+    duration: GAME_CONFIG.FLAMETHROWER.PLAYER.DURATION,
+    scale: GAME_CONFIG.FLAMETHROWER.PLAYER.SCALE,
+    depth: GAME_CONFIG.FLAMETHROWER.PLAYER.DEPTH,
+    basedamage: GAME_CONFIG.FLAMETHROWER.PLAYER.BASEDAMAGE,
+    width: GAME_CONFIG.FLAMETHROWER.PLAYER.WIDTH,
+    height: GAME_CONFIG.FLAMETHROWER.PLAYER.HEIGHT,
+    offsetX: GAME_CONFIG.FLAMETHROWER.PLAYER.OFFSETX,
+    offsetY: GAME_CONFIG.FLAMETHROWER.PLAYER.OFFSETY,
+    interval: GAME_CONFIG.FLAMETHROWER.PLAYER.INTERVAL,
+    growScale: GAME_CONFIG.FLAMETHROWER.PLAYER.GROWSCALE,
+    damageMultiplier: GAME_CONFIG.FLAMETHROWER.PLAYER.DAMAGEMULTIPLIER,
   };
 
 
@@ -130,7 +130,7 @@ export class SaberSystem {
 
     // Then set up repeating timer
     this.slashTimer = this.scene.time.addEvent({
-      delay: this.saberSlashConfig.interval * this.player.saberSpeedMultiplier,
+      delay: this.flamethrowerConfig.interval * this.player.flamethrowerSpeedMultiplier,
       loop: true,
       callback: () => {
         const { x, y, facingLeft } = getPlayerData();
@@ -154,13 +154,13 @@ export class SaberSystem {
     getPlayerData?: () => { x: number; y: number; facingLeft: boolean }
   ): void {
     const flipped = angle === Math.PI;
-    const offsetX = this.saberSlashConfig.offsetX * (flipped ? -1 : 1);
-    const offsetY = this.saberSlashConfig.offsetY;
+    const offsetX = this.flamethrowerConfig.offsetX * (flipped ? -1 : 1);
+    const offsetY = this.flamethrowerConfig.offsetY;
 
     // Create flamethrower sprite
     const flamethrower = this.scene.add.sprite(x + offsetX, y + offsetY, 'flamethrower_start', 0)
-      .setScale(this.saberSlashConfig.scale)
-      .setDepth(this.saberSlashConfig.depth)
+      .setScale(this.flamethrowerConfig.scale)
+      .setDepth(this.flamethrowerConfig.depth)
       .setAlpha(1)
       .setFlipX(flipped);
 
@@ -174,7 +174,7 @@ export class SaberSystem {
     this.scene.time.delayedCall(0, () => {
       if (!flamethrower.active || !flamethrower.texture || !flamethrower.frame) return;
       
-      // Create hitbox - same dimensions as saber
+      // Create hitbox - same dimensions as flamethrower
       // Use displayWidth/displayHeight which accounts for scale
       const displayWidth = flamethrower.displayWidth || flamethrower.width;
       const displayHeight = flamethrower.displayHeight || flamethrower.height;
@@ -224,8 +224,8 @@ export class SaberSystem {
       if (!flamethrower.texture || !flamethrower.frame) return;
       
       const playerData = getPlayerDataFn();
-      const playerOffsetX = this.saberSlashConfig.offsetX * (playerData.facingLeft ? -1 : 1);
-      const playerOffsetY = this.saberSlashConfig.offsetY;
+      const playerOffsetX = this.flamethrowerConfig.offsetX * (playerData.facingLeft ? -1 : 1);
+      const playerOffsetY = this.flamethrowerConfig.offsetY;
       
       flamethrower.x = playerData.x + playerOffsetX;
       flamethrower.y = playerData.y + playerOffsetY;
@@ -272,7 +272,7 @@ export class SaberSystem {
       const tfighters = this.tfighterSystem.getEnemiesNear(flamethrower.x, flamethrower.y, 150);
       const atEnemies = this.atEnemySystem ? this.atEnemySystem.getVisibleEnemies() : [];
       const walkerEnemies = this.walkerEnemySystem ? this.walkerEnemySystem.getVisibleEnemies() : [];
-      const dmgData = this.calculateSlashDamage(this.saberSlashConfig);
+      const dmgData = this.calculateSlashDamage(this.flamethrowerConfig);
       const dmg = dmgData.damage;
       const isCritical = dmgData.isCritical;
 
@@ -283,7 +283,7 @@ export class SaberSystem {
       enemies.forEach((enemy) => {
         if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
           hitEnemies.add(enemy);
-          this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
+          this.scene.events.emit('flamethrower-hit', enemy.x, enemy.y, isCritical);
           this.enemySystem.damageEnemy(enemy, dmg, 0, isCritical);
           if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
           // Reset hit tracking after a short delay to allow continuous damage
@@ -296,7 +296,7 @@ export class SaberSystem {
       tfighters.forEach((enemy) => {
         if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
           hitEnemies.add(enemy);
-          this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
+          this.scene.events.emit('flamethrower-hit', enemy.x, enemy.y, isCritical);
           this.tfighterSystem.damageEnemy(enemy, dmg, 0, isCritical);
           if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
           // Reset hit tracking after a short delay to allow continuous damage
@@ -311,7 +311,7 @@ export class SaberSystem {
         atEnemies.forEach((enemy) => {
           if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
             hitEnemies.add(enemy);
-            this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
+            this.scene.events.emit('flamethrower-hit', enemy.x, enemy.y, isCritical);
             this.atEnemySystem!.damageEnemy(enemy, dmg, 0, isCritical);
             if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
             // Reset hit tracking after a short delay to allow continuous damage
@@ -327,7 +327,7 @@ export class SaberSystem {
         walkerEnemies.forEach((enemy) => {
           if (!hitEnemies.has(enemy) && hitbox.contains(enemy.x, enemy.y)) {
             hitEnemies.add(enemy);
-            this.scene.events.emit('saber-hit', enemy.x, enemy.y, isCritical);
+            this.scene.events.emit('flamethrower-hit', enemy.x, enemy.y, isCritical);
             this.walkerEnemySystem!.damageEnemy(enemy, dmg, 0, isCritical);
             if (statsTracker) statsTracker.recordWeaponDamage('flamethrower', dmg);
             // Reset hit tracking after a short delay to allow continuous damage
@@ -415,10 +415,10 @@ export class SaberSystem {
     });
   }
 
-  private calculateSlashDamage(config: SaberSlashConfig): { damage: number; isCritical: boolean } {
+  private calculateSlashDamage(config: FlamethrowerConfig): { damage: number; isCritical: boolean } {
     const base = config.basedamage;
-    const damageMultiplier = this.player.saberDamageMultiplier;
-    const critChance = 0.2 + this.player.saberCritChance; // Base 20% + relic bonus
+    const damageMultiplier = this.player.flamethrowerDamageMultiplier;
+    const critChance = 0.2 + this.player.flamethrowerCritChance; // Base 20% + relic bonus
     const critMultiplier = 1.5;
 
     let damage = (base) * damageMultiplier;

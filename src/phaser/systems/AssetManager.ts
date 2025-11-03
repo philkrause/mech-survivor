@@ -72,8 +72,8 @@ export class AssetManager {
     });
 
 
-    // Load police_copter Walk spritesheet (4 frames) for R2D2
-    this.scene.load.spritesheet('r2d2', 'assets/images/game/police_copter/Walk.png', {
+    // Load police_copter Walk spritesheet (4 frames) for Attack Chopper
+    this.scene.load.spritesheet('attack_chopper', 'assets/images/game/police_copter/Walk.png', {
       frameWidth: 96,
       frameHeight: 96
     });
@@ -96,7 +96,7 @@ export class AssetManager {
     this.scene.load.image('byoda', 'assets/images/game/coin.png');
     this.scene.load.image('skull', 'assets/images/game/skull.png');
     this.scene.load.image('blaster_icon', 'assets/images/game/blaster_icon_resize.png');
-    this.scene.load.image('saber_icon', 'assets/images/game/saber_icon.png');
+    this.scene.load.image('flamethrower_icon', 'assets/images/game/saber_icon.png');
 
     // ************* ENEMIES **************
     this.scene.load.spritesheet('steppercannon', 'assets/images/game/StepperCannon/Walk.png', {
@@ -154,7 +154,16 @@ export class AssetManager {
 
     this.scene.load.image('spark', 'assets/images/game/spark1.png');
 
+    // Load missile image for Air Strike
+    this.scene.load.image('missile', 'assets/images/game/Missile_01.png');
+    
     // ****** EXPLOSIONS *******
+    // Load Air Strike explosion spritesheet (10 frames, 1280x128 = 128x128 per frame)
+    this.scene.load.spritesheet('explosion_airstrike', 'assets/images/game/Explosion5.png', {
+      frameWidth: 128,
+      frameHeight: 128
+    });
+    
     // Load explosion spritesheet (10 frames, 2560x256 = 256x256 per frame)
     this.scene.load.spritesheet('explosion', 'assets/images/game/Explosion3.png', {
       frameWidth: 256,
@@ -221,12 +230,18 @@ export class AssetManager {
     // Create movement icon (cyan boots)
     this.createIconTexture('movement_icon', 0x00ffff);
 
-    // NOTE: saber_icon is loaded from saber_icon.png file, not created programmatically
+    // NOTE: flamethrower_icon is loaded from saber_icon.png file, not created programmatically
     // Create force unlock icon (purple force)
     this.createIconTexture('force_unlock_icon', 0xaa00ff);
 
-    // Create R2D2 icon (silver droid)
-    this.createIconTexture('r2d2_icon', 0xcccccc);
+    // Create Attack Chopper icon (silver droid)
+    this.createIconTexture('attack_chopper_icon', 0xcccccc);
+
+    // Create Combat Drone icon (orange drone)
+    this.createIconTexture('combat_drone_icon', 0xff6600);
+
+    // Create Air Strike icon (red/orange missile)
+    this.createIconTexture('air_strike_icon', 0xff4400);
 
     // Create blaster unlock icon (red blaster)
     this.createIconTexture('blaster_unlock_icon', 0xff0000);

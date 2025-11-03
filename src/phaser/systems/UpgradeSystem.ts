@@ -49,46 +49,46 @@ export class UpgradeSystem {
 
     // FLAMETHROWER UPGRADES
     this.availableUpgrades.push({
-      id: 'saber_speed',
+      id: 'flamethrower_speed',
       name: 'Rapid Ignition System',
       description: "Increase Flamethrower fire rate by 10%",
-      icon: 'saber_icon',
+      icon: 'flamethrower_icon',
       level: 0,
       maxLevel: 5,
       apply: (player) => {
-        player.increaseSaberSpeed(0.9);
-        this.scene.events.emit('upgrade-saber');
+        player.increaseFlamethrowerSpeed(0.9);
+        this.scene.events.emit('upgrade-flamethrower');
       },
-      isAvailable: (player) => player.hasSaberAbility()
+      isAvailable: (player) => player.hasFlamethrowerAbility()
     });
 
     this.availableUpgrades.push({
-      id: 'saber_damage',
+      id: 'flamethrower_damage',
       name: 'Flamethrower Mastery',
       description: "Increase Flamethrower Damage by 15%",
-      icon: 'saber_icon',
+      icon: 'flamethrower_icon',
       level: 0,
       maxLevel: 5,
       apply: (player) => {
-        console.log("The increase saber damage function was called")
-        player.increaseSaberDamage(0.25);  // Activate the flamethrower and set strength
+        console.log("The increase flamethrower damage function was called")
+        player.increaseFlamethrowerDamage(0.25);  // Activate the flamethrower and set strength
       },
-      isAvailable: (player) => player.hasSaberAbility()
+      isAvailable: (player) => player.hasFlamethrowerAbility()
     });
 
     // ** FLAMETHROWER UNLOCK **
     this.availableUpgrades.push({
-      id: 'unlock_saber',
+      id: 'unlock_flamethrower',
       name: 'Flamethrower Unlock',
       description: "Unlock the legendary flamethrower weapon.",
-      icon: 'saber_icon',
+      icon: 'flamethrower_icon',
       level: 0,
       maxLevel: 1,
       apply: (player) => {
-        player.unlockSaberUpgrade();
-        this.scene.events.emit('upgrade-saber');
+        player.unlockFlamethrowerUpgrade();
+        this.scene.events.emit('upgrade-flamethrower');
       },
-      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.SABER_UNLOCK_LEVEL
+      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.FLAMETHROWER_UNLOCK_LEVEL
     });
 
     // ** PLASMA BLAST UNLOCK **
@@ -101,6 +101,7 @@ export class UpgradeSystem {
       maxLevel: 1,
       apply: (player) => {
         player.unlockForceUpgrade();
+        this.scene.events.emit('upgrade-force');
       },
       isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.FORCE_UNLOCK_LEVEL
     });
@@ -148,44 +149,45 @@ export class UpgradeSystem {
 
     // ** ATTACK CHOPPER UNLOCK **
     this.availableUpgrades.push({
-      id: 'unlock_r2d2',
+      id: 'unlock_attack_chopper',
       name: 'Unlock Attack Chopper',
       description: "Deploys an attack chopper that damages nearby enemies.",
-      icon: 'r2d2_icon',
+      icon: 'attack_chopper_icon',
       level: 0,
       maxLevel: 1,
       apply: (player) => {
-        player.unlockR2D2Upgrade();
+        player.unlockAttackChopperUpgrade();
+        this.scene.events.emit('upgrade-attack_chopper');
       },
-      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.R2D2_UNLOCK_LEVEL
+      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.ATTACK_CHOPPER_UNLOCK_LEVEL
     });
 
     this.availableUpgrades.push({
-      id: 'r2d2_damage',
-      name: 'Drone Combat Protocols',
+      id: 'attack_chopper_damage',
+      name: 'Attack Chopper Protocols',
       description: "Increase Attack Chopper damage by 25%.",
-      icon: 'r2d2_icon',
+      icon: 'attack_chopper_icon',
       level: 0,
       maxLevel: 5,
       apply: (player) => {
-        player.increaseR2D2Damage(.25);
+        player.increaseAttackChopperDamage(.25);
       },
-      isAvailable: (player) => player.hasR2D2Ability()
+      isAvailable: (player) => player.hasAttackChopperAbility()
     });
 
     // ** COMBAT DRONE UNLOCK **
     this.availableUpgrades.push({
-      id: 'unlock_bb8',
+      id: 'unlock_combat_drone',
       name: 'Combat Drone Deploy',
       description: "Deploy a combat drone for rolling slash attacks.",
-      icon: 'bb88_icon',
+      icon: 'combat_drone_icon',
       level: 0,
       maxLevel: 1,
       apply: (player) => {
-        player.unlockBB8Upgrade();
-        this.scene.events.emit('upgrade-bb8');
+        player.unlockCombatDroneUpgrade();
+        this.scene.events.emit('upgrade-combat_drone');
       },
-      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.BB8_UNLOCK_LEVEL
+      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.COMBAT_DRONE_UNLOCK_LEVEL
     });
 
     // ** LASER CANNON **
@@ -203,31 +205,73 @@ export class UpgradeSystem {
       isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.LASER_CANNON_UNLOCK_LEVEL && !player.hasLaserCannonAbility()
     });
 
+    // ** AIR STRIKE **
+    this.availableUpgrades.push({
+      id: 'unlock_air_strike',
+      name: 'Air Strike System',
+      description: 'Unlock Air Strike ability - calls in missiles from above',
+      icon: 'air_strike_icon',
+      level: 0,
+      maxLevel: 1,
+      apply: (player) => {
+        player.unlockAirStrikeUpgrade();
+        this.scene.events.emit('upgrade-air_strike');
+      },
+      isAvailable: (player) => player.getLevel() >= GAME_CONFIG.ABILITIES.AIR_STRIKE_UNLOCK_LEVEL && !player.hasAirStrikeAbility()
+    });
+
+    // ** AIR STRIKE UPGRADES **
+    this.availableUpgrades.push({
+      id: 'air_strike_speed',
+      name: 'Strike Frequency',
+      description: "Increase Air Strike frequency by 15%",
+      icon: 'speed_icon',
+      level: 0,
+      maxLevel: 5,
+      apply: (player) => {
+        player.increaseAirStrikeSpeed(0.85); // Reduces interval by 15%
+      },
+      isAvailable: (player) => player.hasAirStrikeAbility()
+    });
+
+    this.availableUpgrades.push({
+      id: 'air_strike_damage',
+      name: 'Strike Power',
+      description: "Increase Air Strike damage by 25%",
+      icon: 'damage_icon',
+      level: 0,
+      maxLevel: 5,
+      apply: (player) => {
+        player.increaseAirStrikeDamage(.25);
+      },
+      isAvailable: (player) => player.hasAirStrikeAbility()
+    });
+
     // ** COMBAT DRONE UPGRADES **
     this.availableUpgrades.push({
-      id: 'bb8_speed',
+      id: 'combat_drone_speed',
       name: 'Drone Acceleration',
       description: "Increase Combat Drone attack speed by 15%.",
       icon: 'speed_icon',
       level: 0,
       maxLevel: 5,
       apply: (player) => {
-        player.increaseBB8Speed(0.85); // Reduces interval by 15%
+        player.increaseCombatDroneSpeed(0.85); // Reduces interval by 15%
       },
-      isAvailable: (player) => player.hasBB8Ability()
+      isAvailable: (player) => player.hasCombatDroneAbility()
     });
 
     this.availableUpgrades.push({
-      id: 'bb8_damage',
+      id: 'combat_drone_damage',
       name: 'Drone Combat Upgrade',
       description: "Increase Combat Drone damage by 25%.",
       icon: 'damage_icon',
       level: 0,
       maxLevel: 5,
       apply: (player) => {
-        player.increaseBB8Damage(.25);
+        player.increaseCombatDroneDamage(.25);
       },
-      isAvailable: (player) => player.hasBB8Ability()
+      isAvailable: (player) => player.hasCombatDroneAbility()
     });
 
     // ** BLASTER **
@@ -346,16 +390,16 @@ export class UpgradeSystem {
     });
 
     this.availableUpgrades.push({
-      id: 'lightsaber_crystal',
+      id: 'flamethrower_core',
       name: 'Plasma Core',
       description: 'A rare plasma core that increases flamethrower critical hit chance by 20%',
       icon: 'crystal_icon',
       level: 0,
       maxLevel: 1,
       apply: (player) => {
-        player.increaseSaberCritChance(0.20);
+        player.increaseFlamethrowerCritChance(0.20);
       },
-      isAvailable: (player) => player.hasSaberAbility(),
+      isAvailable: (player) => player.hasFlamethrowerAbility(),
       isRelic: true
     });
 
@@ -374,16 +418,16 @@ export class UpgradeSystem {
     });
 
     this.availableUpgrades.push({
-      id: 'r2d2_upgrade',
+      id: 'attack_chopper_upgrade',
       name: 'Attack Chopper Enhancement',
       description: 'An enhancement that increases Attack Chopper damage by 30%',
-      icon: 'r2d2_upgrade_icon',
+      icon: 'attack_chopper_icon',
       level: 0,
       maxLevel: 1,
       apply: (player) => {
-        player.increaseR2D2Damage(0.30);
+        player.increaseAttackChopperDamage(0.30);
       },
-      isAvailable: (player) => player.hasR2D2Ability(),
+      isAvailable: (player) => player.hasAttackChopperAbility(),
       isRelic: true
     });
 
@@ -512,6 +556,9 @@ export class UpgradeSystem {
     // Update acquired upgrades
     this.acquiredUpgrades.set(upgradeId, currentLevel + 1);
 
+    // Update weapon level in stats tracker if this is a weapon upgrade
+    this.updateWeaponLevelInStats(upgradeId);
+
     // Emit event for UI to update upgrade icons
     this.scene.events.emit('upgrade-applied', upgradeId);
 
@@ -519,10 +566,111 @@ export class UpgradeSystem {
   }
 
   /**
+   * Update weapon level in stats tracker when an upgrade is applied
+   */
+  private updateWeaponLevelInStats(upgradeId: string): void {
+    const statsTracker = (this.scene as any).statsTracker;
+    if (!statsTracker) return;
+
+    // Map upgrade IDs to weapon IDs
+    const upgradeToWeaponMap: { [key: string]: string } = {
+      'damage': 'blaster',
+      'unlock_flamethrower': 'flamethrower',
+      'flamethrower_damage': 'flamethrower',
+      'flamethrower_speed': 'flamethrower',
+      'unlock_force': 'force',
+      'force_damage': 'force',
+      'force_speed': 'force',
+      'unlock_combat_drone': 'combat_drone',
+      'combat_drone_damage': 'combat_drone',
+      'combat_drone_speed': 'combat_drone',
+      'unlock_attack_chopper': 'attack_chopper',
+      'attack_chopper_damage': 'attack_chopper',
+      'unlock_laser_cannon': 'laser_cannon',
+      'unlock_air_strike': 'air_strike',
+      'air_strike_damage': 'air_strike',
+      'air_strike_speed': 'air_strike'
+    };
+
+    const weaponId = upgradeToWeaponMap[upgradeId];
+    if (!weaponId) return;
+
+    // Get the weapon's unlock ID for level calculation
+    const weaponUnlockIdMap: { [key: string]: string } = {
+      'blaster': 'damage',
+      'flamethrower': 'unlock_flamethrower',
+      'force': 'unlock_force',
+      'combat_drone': 'unlock_combat_drone',
+      'attack_chopper': 'unlock_attack_chopper',
+      'laser_cannon': 'unlock_laser_cannon',
+      'air_strike': 'unlock_air_strike'
+    };
+
+    const weaponUnlockId = weaponUnlockIdMap[weaponId];
+    if (!weaponUnlockId) return;
+
+    // Calculate total weapon level (aggregates unlock + damage + speed upgrades)
+    const totalLevel = this.getWeaponLevel(weaponUnlockId);
+
+    // If weapon isn't being tracked yet, start tracking it
+    if (!statsTracker.weaponStats || !statsTracker.weaponStats.has(weaponId)) {
+      const weaponNameMap: { [key: string]: string } = {
+        'blaster': 'Blaster',
+        'flamethrower': 'Flamethrower',
+        'force': 'Plasma Blast',
+      'combat_drone': 'Combat Drone',
+      'attack_chopper': 'Attack Chopper',
+      'laser_cannon': 'Laser Cannon',
+      'air_strike': 'Air Strike'
+    };
+      const weaponName = weaponNameMap[weaponId] || weaponId;
+      statsTracker.startWeaponTracking(weaponId, weaponName, totalLevel);
+    } else {
+      // Update existing weapon level
+      statsTracker.updateWeaponLevel(weaponId, totalLevel);
+    }
+  }
+
+  /**
    * Get the current level of an upgrade
    */
   getUpgradeLevel(upgradeId: string): number {
     return this.acquiredUpgrades.get(upgradeId) || 0;
+  }
+
+  /**
+   * Get the total weapon level by aggregating all related upgrades
+   */
+  getWeaponLevel(weaponId: string): number {
+    // Map weapon IDs to their related upgrade IDs
+    const weaponUpgradeMap: { [key: string]: string[] } = {
+      'damage': ['damage'], // Blaster
+      'unlock_flamethrower': ['unlock_flamethrower', 'flamethrower_damage', 'flamethrower_speed'],
+      'unlock_force': ['unlock_force', 'force_damage', 'force_speed'],
+      'unlock_combat_drone': ['unlock_combat_drone', 'combat_drone_damage', 'combat_drone_speed'],
+      'unlock_attack_chopper': ['unlock_attack_chopper', 'attack_chopper_damage'],
+      'unlock_laser_cannon': ['unlock_laser_cannon'],
+      'unlock_air_strike': ['unlock_air_strike', 'air_strike_damage', 'air_strike_speed']
+    };
+
+    const upgradeIds = weaponUpgradeMap[weaponId];
+    if (!upgradeIds) {
+      // If not in map, return the direct upgrade level
+      return this.getUpgradeLevel(weaponId);
+    }
+
+    // Sum up all related upgrade levels
+    let totalLevel = 0;
+    upgradeIds.forEach(upgradeId => {
+      totalLevel += this.getUpgradeLevel(upgradeId);
+    });
+
+    // For blaster, it starts at level 1 (unlocked by default)
+    if (weaponId === 'damage') {
+      return totalLevel + 1;
+    }
+
+    return totalLevel;
   }
 
   /**
@@ -551,8 +699,6 @@ export class UpgradeSystem {
     
     // Helper function to spawn a single coin
     const spawnCoin = () => {
-      //const camera = scene.cameras.main;
-
       // Random initial scale (different sizes)
       const initialScale = Phaser.Math.FloatBetween(0.08, 0.18);
       
