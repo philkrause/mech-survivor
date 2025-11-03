@@ -737,7 +737,7 @@ export default class MainScene extends Phaser.Scene {
     // Pause the game without showing pause menu
     this.pauseGameWithoutMenu();
 
-    this.upgradeSystem.dropFallingSprites(this, "gem", 300)
+    this.upgradeSystem.dropFallingSprites(this, "gem")
     
     // Hide health and dash bars to prevent covering level up stats
     this.gameUI.hideBars();

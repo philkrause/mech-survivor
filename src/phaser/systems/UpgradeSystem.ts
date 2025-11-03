@@ -535,7 +535,7 @@ export class UpgradeSystem {
   }
 
 
-  dropFallingSprites(scene: Phaser.Scene, spriteKey: string, count: number): boolean {
+  dropFallingSprites(scene: Phaser.Scene, spriteKey: string): boolean {
     // Stop any existing timer
     if (this.fallingSpritesTimer) {
       this.fallingSpritesTimer.remove(false);
@@ -551,7 +551,7 @@ export class UpgradeSystem {
     
     // Helper function to spawn a single coin
     const spawnCoin = () => {
-      const camera = scene.cameras.main;
+      //const camera = scene.cameras.main;
 
       // Random initial scale (different sizes)
       const initialScale = Phaser.Math.FloatBetween(0.08, 0.18);
