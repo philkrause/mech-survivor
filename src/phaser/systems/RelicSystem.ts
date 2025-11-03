@@ -69,7 +69,7 @@ export class RelicSystem {
       const vy0 = Math.sin(angle) * speed - 4.0; // upward bias (negative y)
 
       const sprite = this.scene.add.image(originX, originY, 'byoda')
-        .setScale(1.2)  
+        .setScale(0.125)  // Coin is very large, scaled down to 1/2 of previous size
         .setDepth(3002) // below relic display (3003) so the slot animation stays visible
         .setScrollFactor(0)
         .setAlpha(1.0);
@@ -332,6 +332,7 @@ export class RelicSystem {
 
     // Helper function to handle relic selection (space or enter)
     const handleRelicSelection = () => {
+      // Always check if screen is still showing (could be closed by level-up UI)
       if (!this.isShowingRelicScreen) {
         return;
       }
@@ -355,7 +356,9 @@ export class RelicSystem {
       }
       
       // If animation is complete, claim the relic
-      if (this.isAnimationComplete && this.currentRelicDisplay && this.currentOverlay && 
+      // Double-check all references are still valid
+      if (this.isAnimationComplete && this.isShowingRelicScreen && 
+          this.currentRelicDisplay && this.currentOverlay && 
           this.currentTitle && this.currentChestSprite && this.currentInstruction) {
         this.claimRelic(this.currentRelicDisplay, this.currentOverlay, this.currentTitle, 
                        this.currentChestSprite, this.currentInstruction);
@@ -470,6 +473,86 @@ export class RelicSystem {
     
     // Store glow reference so it can be destroyed later
     relicDisplay.setData('glow', glow);
+  }
+
+  /**
+   * Public method to force close relic screen (used when level-up UI opens)
+   */
+  public forceCloseRelicScreen(): void {
+    if (!this.isShowingRelicScreen) {
+      return;
+    }
+    
+    // If we have a selected relic, claim it; otherwise just close
+    if (this.selectedRelicId && this.currentRelicDisplay && this.currentOverlay && 
+        this.currentTitle && this.currentChestSprite && this.currentInstruction) {
+      this.claimRelic(this.currentRelicDisplay, this.currentOverlay, this.currentTitle, 
+                     this.currentChestSprite, this.currentInstruction);
+    } else if (this.currentRelicDisplay && this.currentOverlay && 
+               this.currentTitle && this.currentChestSprite && this.currentInstruction) {
+      // Close without claiming if no relic selected yet
+      this.closeRelicScreen();
+    }
+  }
+
+  /**
+   * Close relic screen without claiming (cleanup only)
+   */
+  private closeRelicScreen(): void {
+    // Clean up screen elements
+    if (this.currentOverlay) {
+      this.currentOverlay.destroy();
+    }
+    if (this.currentTitle) {
+      this.currentTitle.destroy();
+    }
+    if (this.currentChestSprite) {
+      this.currentChestSprite.destroy();
+    }
+    if (this.currentInstruction) {
+      this.currentInstruction.destroy();
+    }
+    if (this.currentRelicDisplay) {
+      // Destroy glow effect if it exists
+      const glow = this.currentRelicDisplay.getData('glow');
+      if (glow) {
+        glow.destroy();
+      }
+      this.currentRelicDisplay.destroy();
+    }
+    
+    this.stopYodaFountain();
+    
+    // Clean up any running animation
+    if (this.animationTimeoutId !== null) {
+      clearTimeout(this.animationTimeoutId);
+      this.animationTimeoutId = null;
+    }
+    
+    // Resume game
+    this.scene.physics.resume();
+    this.scene.time.paused = false;
+    this.isShowingRelicScreen = false;
+    this.selectedRelicId = null;
+    
+    // Clear stored references
+    this.currentRelicDisplay = null;
+    this.currentOverlay = null;
+    this.currentTitle = null;
+    this.currentChestSprite = null;
+    this.currentInstruction = null;
+    this.currentAnimationComplete = null;
+    this.isAnimationComplete = false;
+    
+    // Remove space and enter key listeners
+    if (this.spaceKey) {
+      this.spaceKey.off('down');
+      this.spaceKey = null;
+    }
+    if (this.enterKey) {
+      this.enterKey.off('down');
+      this.enterKey = null;
+    }
   }
 
   /**

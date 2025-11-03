@@ -19,8 +19,8 @@ export class ExperienceSystem {
     this.scene = scene;
     this.player = player;
 
-    // Create the experience orb texture
-    this.createOrbTexture();
+    // No longer create texture - using gem.png image instead
+    // The gem image is loaded in AssetManager
 
     // Initialize experience orb group with pooling
     this.experienceOrbs = this.createOrbGroup();
@@ -28,28 +28,6 @@ export class ExperienceSystem {
     // Pre-populate the object pool to avoid runtime allocations
     this.prepopulateOrbPool();
 
-  }
-
-  /**
-   * Create a circular texture for experience orbs
-   */
-  private createOrbTexture(): void {
-
-    // Skip if texture already exists
-    if (this.scene.textures.exists(GAME_CONFIG.EXPERIENCE_ORB.KEY)) {
-      return;
-    }
-
-
-    const graphics = this.scene.make.graphics({ x: 0, y: 0 });
-
-    // Draw a filled circle
-    graphics.fillStyle(0xffffff); // White (will be tinted later)
-    graphics.fillCircle(8, 8, 8); // 16x16 circle
-
-    // Generate texture from graphics
-    graphics.generateTexture(GAME_CONFIG.EXPERIENCE_ORB.KEY, 16, 16);
-    graphics.destroy();
   }
 
   /**
@@ -69,11 +47,13 @@ export class ExperienceSystem {
    */
   private prepopulateOrbPool(): void {
     for (let i = 0; i < GAME_CONFIG.EXPERIENCE_ORB.MAX_COUNT; i++) {
-      const orb = this.experienceOrbs.create(0, 0, GAME_CONFIG.EXPERIENCE_ORB.KEY) as Phaser.Physics.Arcade.Sprite;
+      // Use 'gem' texture instead of dynamically created texture
+      const orb = this.experienceOrbs.create(0, 0, 'gem') as Phaser.Physics.Arcade.Sprite;
       orb.setActive(false);
       orb.setVisible(false);
       orb.setAlpha(1);
-      orb.setScale(GAME_CONFIG.EXPERIENCE_ORB.SCALE);
+      // Scale gem even smaller when dropped - about 1/50 of its original size (0.02)
+      orb.setScale(0.02);
       this.experienceOrbs.killAndHide(orb); // ❗️CRUCIAL for pool
       this.configureOrbProperties(orb);
     }
@@ -84,9 +64,11 @@ export class ExperienceSystem {
    * Configure an orb sprite with appropriate properties
    */
   private configureOrbProperties(orb: Phaser.Physics.Arcade.Sprite): void {
-    orb.setScale(GAME_CONFIG.EXPERIENCE_ORB.SCALE);
+    // Scale gem even smaller when dropped - about 1/50 of its original size (0.02)
+    orb.setScale(0.02);
     orb.setDepth(GAME_CONFIG.EXPERIENCE_ORB.DEPTH);
-    orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
+    // Remove tint to show gem's natural colors
+    // orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
 
     // Store the orb's value
     (orb as any).value = GAME_CONFIG.EXPERIENCE_ORB.VALUE;
@@ -109,14 +91,18 @@ export class ExperienceSystem {
     orb.enableBody(true, x, y, true, true); // ✔️ Activates physics body
   
     orb.setAlpha(1);
-    orb.setScale(GAME_CONFIG.EXPERIENCE_ORB.SCALE);
-    orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
+    // Scale gem to 1/8 of its original size (0.125)
+    orb.setScale(0.125);
+    // Remove tint to show gem's natural colors
+    // orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
   
     this.activateOrb(orb, x, y);
   
+    // Pulse animation - subtle breathing effect (smaller pulse range)
+    const pulseScale = 0.01; // Much smaller pulse - only 10% larger instead of 50%
     this.scene.tweens.add({
       targets: orb,
-      scale: GAME_CONFIG.EXPERIENCE_ORB.PULSE_SCALE * GAME_CONFIG.EXPERIENCE_ORB.SCALE,
+      scale: pulseScale,
       duration: GAME_CONFIG.EXPERIENCE_ORB.PULSE_DURATION,
       yoyo: true,
       repeat: -1,
@@ -134,8 +120,10 @@ export class ExperienceSystem {
     orb.setActive(true);
     orb.setVisible(true);
     orb.setVelocity(0, 0);
-    orb.setScale(GAME_CONFIG.EXPERIENCE_ORB.SCALE);
-    orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
+    // Scale gem to 1/8 of its original size (0.125)
+    orb.setScale(0.0625);
+    // Remove tint to show gem's natural colors
+    // orb.setTint(GAME_CONFIG.EXPERIENCE_ORB.TINT);
     (orb as any).value = GAME_CONFIG.EXPERIENCE_ORB.VALUE;
     // Re-enable the body
     if (!orb.body) {
@@ -257,7 +245,7 @@ export class ExperienceSystem {
       targets: orb,
       x: this.player.x,
       y: this.player.y,
-      scale: .5,
+      scale: .25,
       duration: 500,
       alpha: 0,
       ease: 'Cubic.easeIn',

@@ -26,6 +26,8 @@ export class UpgradeSystem {
   private acquiredUpgrades: Map<string, number> = new Map();
   private fallingTweens: Phaser.Tweens.Tween[] = [];
   private spriteGroup: Phaser.GameObjects.Group; // Group to hold falling sprites
+  private fallingSpritesTimer: Phaser.Time.TimerEvent | null = null; // Timer for steady stream
+  private isSpawningCoins: boolean = false; // Flag to control continuous spawning
   // Group to hold falling sprites
 
 
@@ -534,54 +536,141 @@ export class UpgradeSystem {
 
 
   dropFallingSprites(scene: Phaser.Scene, spriteKey: string, count: number): boolean {
+    // Stop any existing timer
+    if (this.fallingSpritesTimer) {
+      this.fallingSpritesTimer.remove(false);
+      this.fallingSpritesTimer = null;
+    }
+
     const cameraHeight = scene.cameras.main.height;
     const cameraWidth = scene.cameras.main.width;
 
-    const cameraX = scene.cameras.main.scrollX; // Camera's X position in the world
-    const cameraY = scene.cameras.main.scrollY; // Camera's Y position in the world
+    // Create a steady stream by spawning coins at regular intervals
+    // Spawn coins more frequently for a dense stream
+    const spawnInterval = 60; // Spawn a new coin every 60ms for dense continuous stream
+    
+    // Helper function to spawn a single coin
+    const spawnCoin = () => {
+      const camera = scene.cameras.main;
 
-
-    for (let i = 0; i < count; i++) {
-      // Create a sprite at a random position at the top of the visible area
-      const sprite = scene.add.sprite(
-        Phaser.Math.Between(cameraX, cameraX + cameraWidth), // Random X position within the camera's view
-        Phaser.Math.Between(cameraY - cameraHeight, cameraY - 50), // Completely above the visible area
-        spriteKey // Sprite texture key
-      ).setScale(2);
+      // Random initial scale (different sizes)
+      const initialScale = Phaser.Math.FloatBetween(0.08, 0.18);
+      
+      // For level-up screen with scrollFactor(0), use viewport coordinates (0 to camera.width/height)
+      // Spawn from top of viewport (negative to start above visible)
+      const startY = -50; // Start above the visible area (viewport coordinates)
+      const startX = Phaser.Math.Between(0, cameraWidth); // Random X across entire screen width (viewport coordinates)
+      
+      // Create a sprite at a random position at the top of the viewport
+      const sprite = scene.add.sprite(startX, startY, spriteKey);
+      sprite.setScale(initialScale); // Start with random size
+      sprite.setScrollFactor(0); // Fixed to camera viewport for level-up screen
 
       this.spriteGroup.add(sprite);
 
-      // Set random spin and scale
+      // Set random spin
       sprite.setAngle(Phaser.Math.Between(0, 360)); // Random initial rotation
-      sprite.setScale(Phaser.Math.FloatBetween(.5, 1.5)); // Random initial scale
-
-      // Animate the sprite falling
-      const fallingTween = scene.tweens.add({
-        targets: sprite,
-        y: cameraY + cameraHeight,
-        angle: 0, // Spin 360 degrees
-        duration: Phaser.Math.Between(4000, 6000), // Random fall duration
-        loop: -1,
-        ease: 'Linear',
-        onComplete: () => {
-          // Shrink the sprite as it approaches the bottom
-          const shrinkTween = scene.tweens.add({
-            targets: sprite,
-            scale: 0, // Shrink to 0
-            duration: 500, // Shrink duration
-            ease: 'Linear',
-            onComplete: () => {
-              sprite.destroy(); // Destroy the sprite
-            }
-          });
-
-          // Store the shrink tween reference
-          this.fallingTweens.push(shrinkTween);
+      
+      // Random fall speed (different speeds)
+      const fallSpeed = Phaser.Math.Between(4000, 8000); // Slower = longer duration
+      
+      // Get bottom of screen for target Y (viewport coordinates)
+      const targetY = cameraHeight + 100; // Fall past the screen (viewport coordinates)
+      
+      // Manual animation for coins that works even when scene time is paused
+      // Store animation state
+      const coinState = {
+        startY: startY,
+        targetY: targetY,
+        startScale: initialScale,
+        targetScale: initialScale * 0.2,
+        startTime: Date.now(),
+        fallSpeed: fallSpeed,
+        rotationSpeed: Phaser.Math.Between(2, 6), // Degrees per frame
+        currentRotation: sprite.angle
+      };
+      
+      (sprite as any).coinState = coinState;
+      
+      // Manual update function that runs independent of Phaser time
+      const updateCoin = () => {
+        if (!sprite.active || !(sprite as any).coinState) {
+          return;
         }
-      });
+        
+        const state = (sprite as any).coinState;
+        const elapsed = Date.now() - state.startTime;
+        const progress = Math.min(elapsed / state.fallSpeed, 1);
+        
+        // Update position
+        sprite.y = state.startY + (state.targetY - state.startY) * progress;
+        
+        // Update scale (shrinking as it falls)
+        sprite.scale = state.startScale + (state.targetScale - state.startScale) * progress;
+        
+        // Update rotation
+        state.currentRotation += state.rotationSpeed;
+        sprite.angle = state.currentRotation;
+        
+        // Check if off screen or too small
+        if (sprite.y > targetY || sprite.scale < 0.015 || progress >= 1) {
+          if (sprite.active) {
+            sprite.destroy();
+          }
+          return;
+        }
+        
+        // Continue updating
+        window.requestAnimationFrame(updateCoin);
+      };
+      
+      // Start manual animation loop
+      window.requestAnimationFrame(updateCoin);
+    };
 
-      // Store the falling tween reference
-      this.fallingTweens.push(fallingTween);
+    // Start spawning coins continuously - use simple recursive setTimeout loop
+    // This works even when scene.time.paused = true
+    this.isSpawningCoins = true;
+    
+    const spawnLoop = () => {
+      // Check if we should continue spawning
+      if (!this.isSpawningCoins) {
+        return; // Stop spawning
+      }
+      
+      // Spawn a coin
+      spawnCoin();
+      
+      // Schedule next spawn - use setTimeout to bypass scene time pause
+      const timeoutId = window.setTimeout(() => {
+        spawnLoop();
+      }, spawnInterval);
+      
+      // Store timeout ID for cleanup
+      if (!(this as any).fallingSpawnTimeouts) {
+        (this as any).fallingSpawnTimeouts = [];
+      }
+      (this as any).fallingSpawnTimeouts.push(timeoutId);
+    };
+    
+    // Start the continuous spawning loop immediately
+    spawnLoop();
+    
+    // Create a dummy timer event just for tracking (won't be used for actual spawning)
+    this.fallingSpritesTimer = scene.time.addEvent({
+      delay: 999999, // Very long delay, won't fire
+      callback: () => {},
+      loop: false,
+      startAt: 0
+    } as any);
+    
+    // Spawn initial batch of coins immediately to fill the screen
+    const initialSpawn = 30; // Spawn 30 coins immediately for immediate visual impact
+    for (let i = 0; i < initialSpawn; i++) {
+      // Use setTimeout to bypass scene time pause for immediate spawns
+      window.setTimeout(() => {
+        spawnCoin();
+      }, i * 30);
     }
 
     return true;
@@ -589,6 +678,23 @@ export class UpgradeSystem {
 
 
   stopFallingSprites(): void {
+    // Stop the spawning flag
+    this.isSpawningCoins = false;
+    
+    // Stop the timer (if it exists)
+    if (this.fallingSpritesTimer) {
+      this.fallingSpritesTimer.remove(false);
+      this.fallingSpritesTimer = null;
+    }
+    
+    // Clear any setTimeout-based spawn loops
+    if ((this as any).fallingSpawnTimeouts) {
+      (this as any).fallingSpawnTimeouts.forEach((timeoutId: number) => {
+        window.clearTimeout(timeoutId);
+      });
+      (this as any).fallingSpawnTimeouts = [];
+    }
+
     this.spriteGroup.clear(true, true); // Destroy all sprites in the group
 
     this.fallingTweens.forEach((tween) => tween.stop());

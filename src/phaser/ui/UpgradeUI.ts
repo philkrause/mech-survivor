@@ -70,6 +70,15 @@ export class UpgradeUI {
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
+    // Check if relic screen is open - if so, don't handle input (let relic screen handle it)
+    const scene = this.scene as any;
+    if (scene.relicSystem && scene.relicSystem.isScreenOpen && scene.relicSystem.isScreenOpen()) {
+      // Only handle navigation keys if relic screen is open, but let relic screen handle Enter/Space
+      if (event.key === 'Enter' || event.key === ' ') {
+        return; // Let relic screen handle Enter/Space
+      }
+    }
+    
     const total = this.upgradeSections.length;
 
     if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {

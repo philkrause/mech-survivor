@@ -728,10 +728,16 @@ export default class MainScene extends Phaser.Scene {
    * Show the upgrade UI and pause the game
    */
   private showUpgradeUI(): void {
+    // If relic screen is open, close it first to prevent input conflicts
+    if (this.relicSystem && this.relicSystem.isScreenOpen && this.relicSystem.isScreenOpen()) {
+      // Force close relic screen - this will claim the relic if one is selected
+      this.relicSystem.forceCloseRelicScreen();
+    }
+    
     // Pause the game without showing pause menu
     this.pauseGameWithoutMenu();
 
-    this.upgradeSystem.dropFallingSprites(this, "byoda", 300)
+    this.upgradeSystem.dropFallingSprites(this, "gem", 300)
     
     // Hide health and dash bars to prevent covering level up stats
     this.gameUI.hideBars();

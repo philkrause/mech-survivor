@@ -642,11 +642,14 @@ export class EnemySystem {
     // Skip if no experience system is set
     if (!this.experienceSystem) return;
 
-    // Spawn multiple orbs with wider spread so they don't stack
+    // Spawn multiple gems with moderate spread and even angle distribution to prevent overlap
     const numOrbs = 5;
+    const baseRadius = 20; // Start radius - reduced from 40
+    const radiusSpread = 30; // Additional random spread - reduced from 60
     for (let i = 0; i < numOrbs; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 15 + Math.random() * 35; // 15..50px (increased from 6..24px)
+      // Evenly distribute angles to prevent overlap
+      const angle = (i / numOrbs) * Math.PI * 2 + (Math.random() * 0.3 - 0.15); // Slight random offset
+      const radius = baseRadius + Math.random() * radiusSpread; // 20..50px - more reasonable spread
       const ox = Math.cos(angle) * radius;
       const oy = Math.sin(angle) * radius;
       this.experienceSystem.spawnOrb(enemy.x + ox, enemy.y + oy);

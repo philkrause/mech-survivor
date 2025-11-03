@@ -93,7 +93,7 @@ export class AssetManager {
     this.scene.load.image('blue_particle', 'assets/images/game/blue.png');
 
     // ************* EXTRAS **************
-    this.scene.load.image('byoda', 'assets/images/game/babyyoda.png');
+    this.scene.load.image('byoda', 'assets/images/game/coin.png');
     this.scene.load.image('skull', 'assets/images/game/skull.png');
     this.scene.load.image('blaster_icon', 'assets/images/game/blaster_icon_resize.png');
     this.scene.load.image('saber_icon', 'assets/images/game/saber_icon.png');
@@ -153,6 +153,16 @@ export class AssetManager {
     // ****** PARTICLES *******
 
     this.scene.load.image('spark', 'assets/images/game/spark1.png');
+
+    // ****** EXPLOSIONS *******
+    // Load explosion spritesheet (10 frames, 2560x256 = 256x256 per frame)
+    this.scene.load.spritesheet('explosion', 'assets/images/game/Explosion3.png', {
+      frameWidth: 256,
+      frameHeight: 256
+    });
+
+    // ****** EXPERIENCE GEMS *******
+    this.scene.load.image('gem', 'assets/images/game/gem.png');
 
     // ****** RELICS & CHESTS *******
     this.scene.load.image('chest', 'assets/images/game/chest.png');

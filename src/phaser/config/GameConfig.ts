@@ -102,7 +102,7 @@ export const GAME_CONFIG = {
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
     MAX_COUNT: 8, // Maximum number of Walker enemies at once
-    MIN_LEVEL: 2, // Minimum player level before Walker enemies spawn
+    MIN_LEVEL: 8, // Minimum player level before Walker enemies spawn
     RELIC_DROP_CHANCE: 0.15,
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)
@@ -199,10 +199,10 @@ export const GAME_CONFIG = {
 
   // Ability unlock levels
   ABILITIES: {
-    R2D2_UNLOCK_LEVEL: 5, // Level at which Attack Chopper ability unlocks
-    FORCE_UNLOCK_LEVEL: 7, // Level at which Plasma Blast ability unlocks
+    R2D2_UNLOCK_LEVEL: 2, // Level at which Attack Chopper ability unlocks
+    FORCE_UNLOCK_LEVEL: 2, // Level at which Plasma Blast ability unlocks
     SABER_UNLOCK_LEVEL: 2, // Level at which Flamethrower ability unlocks
-    BB8_UNLOCK_LEVEL: 5, // Level at which Combat Drone ability unlocks
+    BB8_UNLOCK_LEVEL: 2, // Level at which Combat Drone ability unlocks
     LASER_CANNON_UNLOCK_LEVEL: 2, // Level at which Laser Cannon ability unlocks
   },
   LASER_CANNON: {

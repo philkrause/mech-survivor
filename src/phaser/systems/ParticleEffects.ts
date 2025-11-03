@@ -9,6 +9,21 @@ export class ParticleEffects {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.createParticleTextures();
+    this.setupExplosionAnimation();
+  }
+
+  /**
+   * Setup explosion animation from spritesheet
+   */
+  private setupExplosionAnimation(): void {
+    if (!this.scene.anims.exists('explosion')) {
+      this.scene.anims.create({
+        key: 'explosion',
+        frames: this.scene.anims.generateFrameNumbers('explosion', { start: 0, end: 9 }), // 10 frames (0-9)
+        frameRate: 20, // 20 fps for smooth animation
+        repeat: 0 // Play once
+      });
+    }
   }
 
   /**
@@ -45,7 +60,7 @@ export class ParticleEffects {
   }
 
   /**
-   * Create satisfying death explosion effect
+   * Create satisfying death explosion effect using Explosion3 spritesheet + particle effects
    */
   public createDeathEffect(x: number, y: number, _enemyType: string = 'default'): void {
     if (!this.enabled) return;
@@ -60,35 +75,67 @@ export class ParticleEffects {
     
     if (!isOnScreen) return; // Don't create effects for off-screen deaths
     
+    // Create explosion sprite from spritesheet (larger size)
+    const explosionSprite = this.scene.add.sprite(x, y, 'explosion', 0);
+    explosionSprite.setOrigin(0.5, 0.5);
+    explosionSprite.setDepth(1000); // Ensure it's above other game objects
+    
+    // Play explosion animation
+    explosionSprite.play('explosion');
+    
+    // Scale the explosion larger (explosion spritesheet is 256x256 per frame)
+    const explosionScale = 1.2; // Increased from 0.5 to 1.2 for more satisfying impact
+    explosionSprite.setScale(explosionScale);
+    
+    // Add back particle explosion effects for satisfying pixel spray
     // Main explosion particles
     const explosionParticles = this.scene.add.particles(x, y, 'explosion_particle', {
-      speed: { min: 80, max: 150 },
-      scale: { start: 0.8, end: 0 },
-      quantity: 8,
-      lifespan: 600,
+      speed: { min: 100, max: 200 },
+      scale: { start: 1.0, end: 0 },
+      quantity: 12,
+      lifespan: 800,
       tint: [0xff6b35, 0xff8c42, 0xffa500], // Orange to yellow gradient
       alpha: { start: 1, end: 0 },
       blendMode: Phaser.BlendModes.ADD
     });
 
-    // Sparks flying outward
+    // Sparks flying outward (smaller and shorter duration)
     const sparkParticles = this.scene.add.particles(x, y, 'spark', {
-      speed: { min: 100, max: 200 },
-      scale: { start: 0.5, end: 0 },
-      quantity: 12,
-      lifespan: 800,
+      speed: { min: 120, max: 250 },
+      scale: { start: 0.4, end: 0 }, // Reduced from 0.8 to 0.4 - smaller particles
+      quantity: 16,
+      lifespan: 500, // Reduced from 1000 to 500 - shorter duration
       tint: 0xffffff,
       alpha: { start: 1, end: 0 },
       blendMode: Phaser.BlendModes.ADD
     });
-
-    // Light screen shake only for major impacts (on-screen only)
-    this.scene.cameras.main.shake(50, 0.01);
-
-    // Auto-destroy particles
+    
+    // Enhanced screen shake for more impact
+    this.scene.cameras.main.shake(80, 0.02);
+    
+    // Destroy sprite and particles when animation completes
+    explosionSprite.on('animationcomplete', () => {
+      if (explosionSprite.active) {
+        explosionSprite.destroy();
+      }
+    }, this);
+    
+    // Auto-destroy particles after explosion completes
+    // Spark particles have shorter lifespan (500ms), main particles longer (800ms)
     this.scene.time.delayedCall(800, () => {
-      explosionParticles.destroy();
-      sparkParticles.destroy();
+      if (explosionParticles.active) {
+        explosionParticles.destroy();
+      }
+      if (sparkParticles.active) {
+        sparkParticles.destroy();
+      }
+    });
+    
+    // Fallback: destroy sprite after a reasonable time (animation should be ~500ms at 20fps)
+    this.scene.time.delayedCall(600, () => {
+      if (explosionSprite.active) {
+        explosionSprite.destroy();
+      }
     });
   }
 

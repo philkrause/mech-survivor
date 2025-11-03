@@ -44,7 +44,8 @@ export default class ResultsScene extends Phaser.Scene {
     let currentY = 120;
 
     // Basic stats - use wider spacing between labels and values
-    const labelWidth = 250; // Width for labels to prevent overlap
+    // "Enemies Defeated:" is the longest label, so we need enough space for it
+    const labelWidth = 280; // Width for labels to prevent overlap with values
     
     this.add.text(leftPanelX, currentY, 'Survived:', {
       fontSize: '32px',
