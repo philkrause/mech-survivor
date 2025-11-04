@@ -450,6 +450,10 @@ export class WalkerEnemySystem {
       this.scene.events.emit('relic-dropped', enemy.x, enemy.y);
     }
     
+    if (Math.random() < GAME_CONFIG.ENEMY.HEALTH_DROP_CHANCE) {
+      this.scene.events.emit('health-dropped', enemy.x, enemy.y);
+    }
+    
     this.activeEnemies.delete(enemy);
     
     const healthBar = this.healthBars.get(enemy);

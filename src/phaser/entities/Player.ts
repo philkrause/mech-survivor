@@ -805,7 +805,7 @@ export class Player {
     this.scene.add.text(
       cam.scrollX + cam.centerX,
       cam.scrollY + cam.centerY - 25,
-      `GAME OVER`, {
+      `game over`, {
       fontFamily: 'StarJedi',
       fontSize: '64px',
       color: '#ff0000',
@@ -925,19 +925,26 @@ setOverlapping(isOverlapping: boolean): void {
   }
 }
 
-/**
- * Get current health
- */
-getHealth(): number {
-  return this.health;
-}
+  /**
+   * Get current health
+   */
+  getHealth(): number {
+    return this.health;
+  }
 
-/**
- * Get maximum health
- */
-getMaxHealth(): number {
-  return this.maxHealth;
-}
+  /**
+   * Get maximum health
+   */
+  getMaxHealth(): number {
+    return this.maxHealth;
+  }
+
+  /**
+   * Heal the player by a specified amount
+   */
+  heal(amount: number): void {
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
 
 isDead(): boolean {
   return this.dead;

@@ -4,18 +4,18 @@ import Game from './components/Game';
 
 // Define public paths for images
 //const headerImage = '/assets/images/ui/header.png';
-const borderImage = '/assets/images/ui/border.png';
+//const borderImage = '/assets/images/ui/border.png';
 
 const App: React.FC = () => {
   return (
     <div className="App">
       <main>
         <div className="game-border-container">
-          <img 
+          {/* <img 
             src={borderImage} 
             alt="Game Border" 
             className="game-border"
-          />
+          /> */}
           <div className="game-header">
             {/* <img 
               src={headerImage} 

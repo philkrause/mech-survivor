@@ -11,7 +11,7 @@ export const GAME_CONFIG = {
     DEPTH: 10,
     HITBOX_SCALE: 1,
     ATTACK_INTERVAL: 100, // ms between attacks
-    MAX_HEALTH: 500, // Maximum player health
+    MAX_HEALTH: 100, // Maximum player health
     DAMAGE_INTERVAL: 500, // ms between damage ticks when overlapping enemies
     DAMAGE_AMOUNT: 5, // Amount of damage taken per tick
     DAMAGE_TINT: 0xff0000, // Red tint when damaged
@@ -34,7 +34,7 @@ export const GAME_CONFIG = {
     SPEED: 50,
     SCALE: 1,
     DEPTH: 5,
-    SPAWN_INTERVAL: 500, // ms between spawns (base interval)
+    SPAWN_INTERVAL: 2000, // ms between spawns (base interval)
     MAX_COUNT: 10000,
     SPAWN_PADDING: 20, // Distance from edge
     HITBOX_SCALE: .75,
@@ -45,6 +45,20 @@ export const GAME_CONFIG = {
     KNOCKBACK_DURATION: 200, // ms of knockback effect
     EXPERIENCE_DROP_CHANCE: 1, // Chance (0-1) of dropping an experience orb
     RELIC_DROP_CHANCE: 0.01, // Chance (0-1) for relic drop on death
+    HEALTH_DROP_CHANCE: 0.05, // Chance (0-1) for health drop on death
+    HEALTH_DROP_HEAL_AMOUNT: 10, // Amount of health restored when picking up a health drop
+    // Wave-based spawning (Vampire Survivors style)
+    WAVES: {
+      ENABLED: true, // Enable wave-based spawning
+      WAVE_DURATION: 15000, // ms - how long a wave lasts (intense spawning)
+      LULL_DURATION: 8000, // ms - how long lull period lasts (reduced spawning)
+      MIN_WAVE_DURATION: 10000, // ms - minimum wave duration (scales down over time)
+      MIN_LULL_DURATION: 4000, // ms - minimum lull duration (scales down over time)
+      BURST_SPAWN_COUNT: 5, // Number of enemies to spawn in burst during wave
+      BURST_SPAWN_INTERVAL: 200, // ms between enemies in a burst
+      LULL_SPAWN_MULTIPLIER: 0.3, // During lull, spawn at 30% of normal rate
+      WAVE_INTENSITY_SCALING: 0.95, // Wave intensity increases by 5% per wave (duration decreases)
+    },
     // Spawn rate scaling
     LEVEL_SCALING: {
       REDUCTION_PER_LEVEL: 0.5, // 25% reduction per level (e.g., level 2 = 75% of base, level 3 = 50% of base)

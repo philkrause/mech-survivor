@@ -95,6 +95,7 @@ export class AssetManager {
     // ************* EXTRAS **************
     this.scene.load.image('byoda', 'assets/images/game/coin.png');
     this.scene.load.image('skull', 'assets/images/game/skull.png');
+    this.scene.load.image('health_drop', 'assets/images/game/HP_Bonus.png');
     this.scene.load.image('blaster_icon', 'assets/images/game/blaster_icon_resize.png');
     this.scene.load.image('flamethrower_icon', 'assets/images/game/saber_icon.png');
 

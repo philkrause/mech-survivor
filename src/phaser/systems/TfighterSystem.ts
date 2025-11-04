@@ -446,6 +446,7 @@ export class TfighterSystem {
       this.showDamageNumber(this.scene, enemy.x, enemy.y - 10, damage, isCritical);
       this.dropExperienceOrb(enemy);
       this.dropRelic(enemy);
+      this.dropHealth(enemy);
       this.deactivateEnemy(enemy);
 
       return true;
@@ -516,6 +517,16 @@ export class TfighterSystem {
     if (Math.random() < GAME_CONFIG.TFIGHTER.RELIC_DROP_CHANCE) {
       //console.log("T-fighter dropping relic at:", enemy.x, enemy.y);
       this.scene.events.emit('relic-dropped', enemy.x, enemy.y);
+    }
+  }
+
+  /**
+   * Drop health when enemy dies
+   */
+  private dropHealth(enemy: Phaser.Physics.Arcade.Sprite): void {
+    // Configurable chance to drop health from T-fighters
+    if (Math.random() < GAME_CONFIG.ENEMY.HEALTH_DROP_CHANCE) {
+      this.scene.events.emit('health-dropped', enemy.x, enemy.y);
     }
   }
 

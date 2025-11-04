@@ -447,6 +447,7 @@ export class AtEnemySystem {
     
     // Drop relic (higher chance than regular enemies)
     this.dropRelic(enemy);
+    this.dropHealth(enemy);
     
     // Remove from active enemies
     this.activeEnemies.delete(enemy);
@@ -495,6 +496,16 @@ export class AtEnemySystem {
     // Configurable chance to drop a relic from AT enemies
     if (Math.random() < GAME_CONFIG.AT.RELIC_DROP_CHANCE) {
       this.scene.events.emit('relic-dropped', enemy.x, enemy.y);
+    }
+  }
+
+  /**
+   * Drop health when enemy dies
+   */
+  private dropHealth(enemy: Phaser.Physics.Arcade.Sprite): void {
+    // Configurable chance to drop health from AT enemies
+    if (Math.random() < GAME_CONFIG.ENEMY.HEALTH_DROP_CHANCE) {
+      this.scene.events.emit('health-dropped', enemy.x, enemy.y);
     }
   }
 

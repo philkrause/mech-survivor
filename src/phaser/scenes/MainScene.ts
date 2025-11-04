@@ -15,6 +15,7 @@ import { CombatDroneSystem } from '../systems/CombatDroneSystem';
 import { LaserCannonSystem } from '../systems/LaserCannonSystem';
 import { AirStrikeSystem } from '../systems/AirStrikeSystem';
 import { RelicSystem } from '../systems/RelicSystem';
+import { HealthDropSystem } from '../systems/HealthDropSystem';
 import { ParticleEffects } from '../systems/ParticleEffects';
 
 import { ExperienceSystem } from '../systems/ExperienceSystem';
@@ -49,6 +50,7 @@ export default class MainScene extends Phaser.Scene {
   private laserCannonSystem!: LaserCannonSystem;
   private airStrikeSystem!: AirStrikeSystem;
   private relicSystem!: RelicSystem;
+  private healthDropSystem!: HealthDropSystem;
   private particleEffects!: ParticleEffects;
 
   private experienceSystem!: ExperienceSystem;
@@ -292,6 +294,9 @@ export default class MainScene extends Phaser.Scene {
 
     // Create relic system (needs GameUI reference)
     this.relicSystem = new RelicSystem(this, this.player, this.gameUI, this.upgradeSystem);
+
+    // Create health drop system
+    this.healthDropSystem = new HealthDropSystem(this, this.player);
 
     // Initialize stats tracker
     this.statsTracker = new StatsTracker();
@@ -915,7 +920,8 @@ export default class MainScene extends Phaser.Scene {
 
 
     // Update experience system
-    this.profileSystem('experienceSystem.update', () => this.experienceSystem.update());
+        this.profileSystem('experienceSystem.update', () => this.experienceSystem.update());
+        this.profileSystem('healthDropSystem.update', () => this.healthDropSystem.update(time, _delta));
 
     // Update performance monitoring (only in debug mode)
     if (GAME_CONFIG.DEBUG && this.performanceMonitor) {

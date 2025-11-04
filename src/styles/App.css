@@ -35,9 +35,9 @@ main {
 
 .game-border-container {
   position: relative;
-  width: 1229px;
-  height: 922px;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -56,12 +56,12 @@ main {
 }
 
 .game-container {
-  width: 1024px;
-  height: 768px;
+  width: 100vw;
+  height: 100vh;
   position: relative;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
-  box-sizing: content-box;
+  box-sizing: border-box;
   z-index: 1; /* behind the border but above background elements */
   border: none;
   box-shadow: none;

@@ -27,12 +27,18 @@ const Game: React.FC = () => {
       return;
     }
 
-    // Game configuration
+    // Game configuration - fullscreen responsive
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.WEBGL, // Force WebGL for better performance in Chrome
-      width: 1024,
-      height: 768,
+      width: window.innerWidth,
+      height: window.innerHeight,
       parent: gameContainerRef.current || undefined,
+      scale: {
+        mode: Phaser.Scale.RESIZE, // Automatically resize to fit container
+        autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
       physics: {
         default: 'arcade',
         arcade: {
@@ -58,25 +64,37 @@ const Game: React.FC = () => {
     // Create new game instance
     gameRef.current = new Phaser.Game(config);
 
+    // Handle window resize
+    const handleResize = () => {
+      if (gameRef.current) {
+        gameRef.current.scale.resize(window.innerWidth, window.innerHeight);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
     // Cleanup function
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
       }
       isInitializedRef.current = false;
     };
-  }, []);
+  }, []); // Only run once on mount
 
   return (
     <div 
       ref={gameContainerRef} 
       style={{ 
-        width: '1024px', 
-        height: '768px',
-        minWidth: '1024px',
-        minHeight: '768px',
-        margin: '0 auto'
+        width: '100vw', 
+        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        margin: 0,
+        padding: 0
       }} 
     />
   );

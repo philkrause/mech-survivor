@@ -10,7 +10,7 @@ import { Player } from '../entities/Player';
 export class EnemySystem {
   private scene: Phaser.Scene;
   private enemies: Phaser.Physics.Arcade.Group;
-  private spawnTimer: Phaser.Time.TimerEvent;
+  private spawnTimer: Phaser.Time.TimerEvent | null = null;
   private target: Phaser.Physics.Arcade.Sprite;
   private player: Player;
   private experienceSystem: ExperienceSystem | null = null;
@@ -24,6 +24,12 @@ export class EnemySystem {
   private spawnZones: Array<{ x: number, y: number }> = [];
   // tracking enemies that are off screen 
   private offscreenTimers: Map<Phaser.Physics.Arcade.Sprite, number> = new Map();
+
+  // Wave-based spawning (Vampire Survivors style)
+  private isWaveActive: boolean = true; // Start with a wave
+  private currentWaveNumber: number = 1;
+  private waveTimer: Phaser.Time.TimerEvent | null = null;
+  private burstTimer: Phaser.Time.TimerEvent | null = null;
 
   // Health bars for enemies
   private healthBars: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Graphics> = new Map();
@@ -48,8 +54,13 @@ export class EnemySystem {
     // Pre-populate the object pool to avoid runtime allocations
     this.prepopulateEnemyPool();
 
-    // Set up spawn timer
-    this.spawnTimer = this.startSpawnTimer();
+    // Set up wave-based spawning if enabled
+    if (GAME_CONFIG.ENEMY.WAVES.ENABLED) {
+      this.startWaveCycle();
+    } else {
+      // Set up traditional spawn timer
+      this.spawnTimer = this.startSpawnTimer();
+    }
     //this.spawnTfighterFormation();
     
   }
@@ -187,17 +198,26 @@ export class EnemySystem {
    * Should be called when player level changes or periodically for time-based scaling
    */
   updateSpawnRate(): void {
-    // Destroy existing timer
-    if (this.spawnTimer) {
-      this.spawnTimer.destroy();
+    // If wave-based spawning is disabled, use traditional method
+    if (!GAME_CONFIG.ENEMY.WAVES.ENABLED) {
+      // Destroy existing timer
+      if (this.spawnTimer) {
+        this.spawnTimer.destroy();
+      }
+
+      // Create new timer with updated interval
+      this.spawnTimer = this.startSpawnTimer();
+
+      const elapsedTime = this.scene.time.now - this.gameStartTime;
+      const minutesElapsed = Math.floor(elapsedTime / 60000);
+      console.log(`Enemy spawn rate updated: ${this.calculateSpawnInterval()}ms (Player Level: ${this.player.getLevel()}, Time: ${minutesElapsed}m)`);
+    } else {
+      // For wave-based spawning, update the spawn interval but keep wave cycle
+      if (this.isWaveActive && this.spawnTimer) {
+        this.spawnTimer.destroy();
+        this.spawnTimer = this.startSpawnTimer();
+      }
     }
-
-    // Create new timer with updated interval
-    this.spawnTimer = this.startSpawnTimer();
-
-    const elapsedTime = this.scene.time.now - this.gameStartTime;
-    const minutesElapsed = Math.floor(elapsedTime / 60000);
-    console.log(`Enemy spawn rate updated: ${this.calculateSpawnInterval()}ms (Player Level: ${this.player.getLevel()}, Time: ${minutesElapsed}m)`);
   }
 
 
@@ -255,6 +275,14 @@ export class EnemySystem {
       return;
     }
 
+    // If wave-based spawning is enabled, check if we're in a lull period
+    if (GAME_CONFIG.ENEMY.WAVES.ENABLED && !this.isWaveActive) {
+      // During lull, spawn at reduced rate (only sometimes)
+      if (Math.random() > GAME_CONFIG.ENEMY.WAVES.LULL_SPAWN_MULTIPLIER) {
+        return; // Skip this spawn
+      }
+    }
+
     // Get available enemy types based on player level
     const availableTypes = this.getAvailableEnemyTypes();
     
@@ -277,6 +305,164 @@ export class EnemySystem {
 
     if (enemy)
       this.activateEnemy(enemy, x, y, type);
+  }
+
+  /**
+   * Spawn multiple enemies in a burst (formation spawning)
+   */
+  private spawnBurst(count: number = GAME_CONFIG.ENEMY.WAVES.BURST_SPAWN_COUNT): void {
+    if (this.getEnemyCount() >= GAME_CONFIG.ENEMY.MAX_COUNT) {
+      return;
+    }
+
+    const availableTypes = this.getAvailableEnemyTypes();
+    if (availableTypes.length === 0) {
+      availableTypes.push('hover');
+    }
+
+    this.spawnZones = this.createSpawnZones();
+    const spawnZone = Phaser.Utils.Array.GetRandom(this.spawnZones);
+    const baseX = spawnZone.x;
+    const baseY = spawnZone.y;
+
+    // Spawn enemies in a cluster formation
+    for (let i = 0; i < count; i++) {
+      // Stagger spawns slightly for visual effect
+      this.scene.time.delayedCall(
+        i * GAME_CONFIG.ENEMY.WAVES.BURST_SPAWN_INTERVAL,
+        () => {
+          if (this.getEnemyCount() >= GAME_CONFIG.ENEMY.MAX_COUNT) {
+            return;
+          }
+
+          // Add some spread to cluster formation
+          const spread = 30;
+          const x = baseX + Phaser.Math.Between(-spread, spread);
+          const y = baseY + Phaser.Math.Between(-spread, spread);
+
+          const type = Phaser.Utils.Array.GetRandom(availableTypes);
+          const enemy = this.enemies.get(x, y, type) as Phaser.Physics.Arcade.Sprite;
+
+          if (enemy) {
+            this.activateEnemy(enemy, x, y, type);
+          }
+        }
+      );
+    }
+  }
+
+  /**
+   * Start wave-based spawning cycle (Vampire Survivors style)
+   */
+  private startWaveCycle(): void {
+    this.isWaveActive = true;
+    
+    // Calculate wave duration (scales down over time for more intense waves)
+    const waveDuration = this.calculateWaveDuration();
+    
+    // Start continuous spawning during wave
+    this.spawnTimer = this.startSpawnTimer();
+    
+    // Schedule burst spawns during wave
+    this.scheduleBurstSpawns(waveDuration);
+    
+    // Schedule wave end
+    if (this.waveTimer) {
+      this.waveTimer.destroy();
+    }
+    this.waveTimer = this.scene.time.addEvent({
+      delay: waveDuration,
+      callback: () => {
+        this.endWave();
+      }
+    });
+  }
+
+  /**
+   * End current wave and start lull period
+   */
+  private endWave(): void {
+    if (this.burstTimer) {
+      this.burstTimer.destroy();
+      this.burstTimer = null;
+    }
+
+    this.isWaveActive = false;
+    
+    // Calculate lull duration
+    const lullDuration = this.calculateLullDuration();
+    
+    // Reduce spawn rate during lull
+    if (this.spawnTimer) {
+      this.spawnTimer.destroy();
+    }
+    // Use longer interval during lull
+    const baseInterval = this.calculateSpawnInterval();
+    const lullInterval = baseInterval / GAME_CONFIG.ENEMY.WAVES.LULL_SPAWN_MULTIPLIER;
+    this.spawnTimer = this.scene.time.addEvent({
+      delay: lullInterval,
+      callback: this.spawnEnemy,
+      callbackScope: this,
+      loop: true
+    });
+    
+    // Schedule next wave
+    if (this.waveTimer) {
+      this.waveTimer.destroy();
+    }
+    this.waveTimer = this.scene.time.addEvent({
+      delay: lullDuration,
+      callback: () => {
+        this.currentWaveNumber++;
+        this.startWaveCycle();
+      }
+    });
+  }
+
+  /**
+   * Calculate wave duration (decreases over time for more intense waves)
+   */
+  private calculateWaveDuration(): number {
+    const baseDuration = GAME_CONFIG.ENEMY.WAVES.WAVE_DURATION;
+    const minDuration = GAME_CONFIG.ENEMY.WAVES.MIN_WAVE_DURATION;
+    
+    // Scale down duration based on wave number (waves get more intense)
+    const scalingFactor = Math.pow(GAME_CONFIG.ENEMY.WAVES.WAVE_INTENSITY_SCALING, this.currentWaveNumber - 1);
+    const scaledDuration = baseDuration * scalingFactor;
+    
+    return Math.max(minDuration, scaledDuration);
+  }
+
+  /**
+   * Calculate lull duration (decreases over time)
+   */
+  private calculateLullDuration(): number {
+    const baseDuration = GAME_CONFIG.ENEMY.WAVES.LULL_DURATION;
+    const minDuration = GAME_CONFIG.ENEMY.WAVES.MIN_LULL_DURATION;
+    
+    // Scale down duration based on wave number
+    const scalingFactor = Math.pow(GAME_CONFIG.ENEMY.WAVES.WAVE_INTENSITY_SCALING, this.currentWaveNumber - 1);
+    const scaledDuration = baseDuration * scalingFactor;
+    
+    return Math.max(minDuration, scaledDuration);
+  }
+
+  /**
+   * Schedule burst spawns throughout the wave
+   */
+  private scheduleBurstSpawns(waveDuration: number): void {
+    const burstInterval = 2000; // Burst every 2 seconds during wave
+    const numBursts = Math.floor(waveDuration / burstInterval);
+    
+    for (let i = 1; i <= numBursts; i++) {
+      this.scene.time.delayedCall(i * burstInterval, () => {
+        if (this.isWaveActive && this.getEnemyCount() < GAME_CONFIG.ENEMY.MAX_COUNT) {
+          // Calculate burst size (increases with wave number)
+          const burstSize = GAME_CONFIG.ENEMY.WAVES.BURST_SPAWN_COUNT + Math.floor(this.currentWaveNumber / 2);
+          this.spawnBurst(Math.min(burstSize, 10)); // Cap at 10 enemies per burst
+        }
+      });
+    }
   }
 
 
@@ -588,6 +774,7 @@ export class EnemySystem {
       this.showDamageNumber(this.scene, enemy.x, enemy.y - 10, damage, isCritical);
       this.dropExperienceOrb(enemy);
       this.dropRelic(enemy);
+      this.dropHealth(enemy);
       
       // Deactivate enemy immediately (all enemies now explode on death)
       this.deactivateEnemy(enemy);
@@ -667,6 +854,16 @@ export class EnemySystem {
     if (Math.random() < GAME_CONFIG.ENEMY.RELIC_DROP_CHANCE) {
       //console.log("Regular enemy dropping relic at:", enemy.x, enemy.y);
       this.scene.events.emit('relic-dropped', enemy.x, enemy.y);
+    }
+  }
+
+  /**
+   * Drop a health drop at the enemy's position (chance based on config)
+   */
+  public dropHealth(enemy: Phaser.Physics.Arcade.Sprite): void {
+    // Configurable chance to drop health from regular enemies
+    if (Math.random() < GAME_CONFIG.ENEMY.HEALTH_DROP_CHANCE) {
+      this.scene.events.emit('health-dropped', enemy.x, enemy.y);
     }
   }
 
@@ -824,7 +1021,15 @@ export class EnemySystem {
    */
   cleanup(): void {
     // Stop the spawn timer
-    this.spawnTimer.destroy();
+    if (this.spawnTimer) {
+      this.spawnTimer.destroy();
+    }
+    if (this.waveTimer) {
+      this.waveTimer.destroy();
+    }
+    if (this.burstTimer) {
+      this.burstTimer.destroy();
+    }
 
     // Deactivate all enemies
     for (const enemy of this.activeEnemies) {
