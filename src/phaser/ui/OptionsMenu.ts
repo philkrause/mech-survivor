@@ -15,7 +15,7 @@ export class OptionsMenu {
   private volumeSliderBg!: Phaser.GameObjects.Graphics;
   private volumeText!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
-  private currentVolume: number = 0.0;
+  private currentVolume: number = 0.5; // Default to 50%
   private isVolumeSelected: boolean = false;
 
   constructor(scene: Phaser.Scene, callbacks: OptionsMenuCallbacks) {
@@ -87,6 +87,9 @@ export class OptionsMenu {
     this.isVisible = true;
     this.selectedIndex = 0;
     this.isVolumeSelected = false;
+    
+    // Sync currentVolume with actual global volume
+    this.currentVolume = this.scene.sound.volume;
     
     // Sync initial volume
     this.callbacks.onVolumeChange(this.currentVolume);

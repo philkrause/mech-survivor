@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_CONFIG } from '../config/GameConfig';
 
 /**
  * Enhanced particle effects system for satisfying visual feedback
@@ -65,6 +66,9 @@ export class ParticleEffects {
   public createDeathEffect(x: number, y: number, _enemyType: string = 'default'): void {
     if (!this.enabled) return;
     
+    // Don't create effects if game is paused (relic screen, level-up, etc.)
+    if (this.scene.time.paused) return;
+    
     // Check if death is on-screen (within camera bounds + some margin)
     const camera = this.scene.cameras.main;
     const margin = 100; // Extra margin to include deaths just off-screen
@@ -112,6 +116,10 @@ export class ParticleEffects {
     
     // Enhanced screen shake for more impact
     this.scene.cameras.main.shake(80, 0.02);
+    
+    // Play explosion sound at maximum volume
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('explosion', { volume: GAME_CONFIG.SOUNDS.EXPLOSION });
     
     // Destroy sprite and particles when animation completes
     explosionSprite.on('animationcomplete', () => {

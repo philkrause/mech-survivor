@@ -237,6 +237,10 @@ export class ExperienceSystem {
     if ((orb as any).collected) return; // already collected
     (orb as any).collected = true;
   
+    // Play collect orb sound
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('collect_orb', { volume: GAME_CONFIG.SOUNDS.COLLECT_ORB });
+  
     // Add experience to the player
     this.playerExperience += (orb as any).value;
   

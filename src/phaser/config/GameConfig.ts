@@ -45,7 +45,7 @@ export const GAME_CONFIG = {
     KNOCKBACK_DURATION: 200, // ms of knockback effect
     EXPERIENCE_DROP_CHANCE: 1, // Chance (0-1) of dropping an experience orb
     RELIC_DROP_CHANCE: 0.01, // Chance (0-1) for relic drop on death
-    HEALTH_DROP_CHANCE: 0.05, // Chance (0-1) for health drop on death
+    HEALTH_DROP_CHANCE: 0.01, // Chance (0-1) for health drop on death
     HEALTH_DROP_HEAL_AMOUNT: 10, // Amount of health restored when picking up a health drop
     // Wave-based spawning (Vampire Survivors style)
     WAVES: {
@@ -110,14 +110,14 @@ export const GAME_CONFIG = {
   },
   AT: {
     SPAWN_INTERVAL: 2000, // ms between spawns (base interval)
-    MAX_COUNT: 10, // Maximum number of AT enemies at once
+    MAX_COUNT: 30, // Maximum number of AT enemies at once
     MIN_LEVEL: 2, // Minimum player level before AT enemies spawn
     RELIC_DROP_CHANCE: 0.01
   },
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
-    MAX_COUNT: 8, // Maximum number of Walker enemies at once
-    MIN_LEVEL: 8, // Minimum player level before Walker enemies spawn
+    MAX_COUNT: 30, // Maximum number of Walker enemies at once
+    MIN_LEVEL: 1, // Minimum player level before Walker enemies spawn
     RELIC_DROP_CHANCE: 0.01,
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)
@@ -214,11 +214,11 @@ export const GAME_CONFIG = {
 
   // Ability unlock levels
   ABILITIES: {
-    ATTACK_CHOPPER_UNLOCK_LEVEL: 3, // Level at which Attack Chopper ability unlocks
-    FORCE_UNLOCK_LEVEL: 3, // Level at which Plasma Blast ability unlocks
-    FLAMETHROWER_UNLOCK_LEVEL: 3, // Level at which Flamethrower ability unlocks
-    COMBAT_DRONE_UNLOCK_LEVEL: 3, // Level at which Combat Drone ability unlocks
-    LASER_CANNON_UNLOCK_LEVEL: 3, // Level at which Laser Cannon ability unlocks
+    ATTACK_CHOPPER_UNLOCK_LEVEL: 2, // Level at which Attack Chopper ability unlocks
+    FORCE_UNLOCK_LEVEL: 2, // Level at which Plasma Blast ability unlocks
+    FLAMETHROWER_UNLOCK_LEVEL: 2, // Level at which Flamethrower ability unlocks
+    COMBAT_DRONE_UNLOCK_LEVEL: 2, // Level at which Combat Drone ability unlocks
+    LASER_CANNON_UNLOCK_LEVEL: 2, // Level at which Laser Cannon ability unlocks
     AIR_STRIKE_UNLOCK_LEVEL: 2, // Level at which Air Strike ability unlocks
   },
   AIR_STRIKE: {
@@ -242,6 +242,22 @@ export const GAME_CONFIG = {
       strokeThickness: 2,
       stroke: '#000000'
     }
+  },
+  SOUNDS: {
+    // Volume settings for all sound effects (0-1)
+    // Phaser automatically multiplies these by global volume
+    BLASTER: 0.1,
+    COMBAT_DRONE: 0.6,
+    LASER_CANNON: 0.25,
+    LASER_CANNON2: 0.25, // Walker enemy laser
+    EXPLOSION: 1.0,
+    FLAMETHROWER: 0.5,
+    RELIC_PICKUP: 0.4,
+    PLAYER_DEATH: 0.5,
+    LEVEL_UP: 0.5,
+    PAUSE_GAME: 0.3,
+    HEALTH_PICKUP: 0.3,
+    COLLECT_ORB: 0.2
   }
 };
 

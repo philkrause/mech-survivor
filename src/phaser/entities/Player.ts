@@ -265,6 +265,11 @@ export class Player {
       dirY = normalizedDirection.y;
     }
 
+    // Play blaster sound
+    if ((this.scene as any).soundManager) {
+      (this.scene as any).soundManager.playSound('blaster', GAME_CONFIG.SOUNDS.BLASTER);
+    }
+    
     // Calculate projectile spawn position (in front of player)
     const projectileOffset = 20; // Distance in front of player
     let projectileSpawnX = playerPos.x + (dirX * projectileOffset);
@@ -798,13 +803,22 @@ export class Player {
     //death animation
     this.deathVisual();
    
+      // Play player death sound
+      // Phaser multiplies config volume by global volume automatically
+      this.scene.sound.play('player_death', { volume: GAME_CONFIG.SOUNDS.PLAYER_DEATH });
+   
     // Hide the player sprite (original behavior)
     this.sprite.setActive(false).setVisible(false);
 
-    // Show Game Over text
-    this.scene.add.text(
-      cam.scrollX + cam.centerX,
-      cam.scrollY + cam.centerY - 25,
+    // Hide health and dash bars when player dies (they overlap with game over text)
+    if ((this.scene as any).gameUI) {
+      (this.scene as any).gameUI.hideBars();
+    }
+
+    // Show Game Over text - fixed to camera viewport (not world space)
+    const gameOverText = this.scene.add.text(
+      cam.centerX,
+      cam.centerY - 50,
       `game over`, {
       fontFamily: 'StarJedi',
       fontSize: '64px',
@@ -812,32 +826,42 @@ export class Player {
       stroke: '#000',
       strokeThickness: 8,
       align: 'center'
-    }).setOrigin(0.5).setDepth(1000);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2000); // Higher depth than UI bars
 
-    // Results button
+    // Results button - fixed to camera viewport (not world space)
     const resultsButton = this.scene.add.text(
-      cam.scrollX + cam.centerX,
-      cam.scrollY + cam.centerY + 45,
+      cam.centerX,
+      cam.centerY + 50,
       'RESULTS',
       {
         fontFamily: 'StarJedi',
         fontSize: '64px',
-        color: '#ffff00',
+        color: '#ffffff', // Start white like main menu
         stroke: '#000',
         strokeThickness: 8,
         align: 'center'
       }
-    ).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(1000);
+    ).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true }).setDepth(2000); // Higher depth than UI bars
     
 
-    resultsButton.on('pointerdown', () => {
+    const goToResults = () => {
       // Get game stats and transition to results scene
       (this.scene as any).showResults();
+    };
+
+    resultsButton.on('pointerdown', goToResults);
+
+    // Hover effect - white to yellow like main menu
+    resultsButton.on('pointerover', () => {
+      resultsButton.setStyle({ color: '#ffff00' }); // Yellow on hover
+    });
+    resultsButton.on('pointerout', () => {
+      resultsButton.setStyle({ color: '#ffffff' }); // White on out
     });
 
-    // Hover effect
-    resultsButton.on('pointerover', () => resultsButton.setStyle({ backgroundColor: '#444' }));
-    resultsButton.on('pointerout', () => resultsButton.setStyle({ backgroundColor: '' }));
+    // Store button reference for keyboard input
+    (this.scene as any).gameOverButton = resultsButton;
+    (this.scene as any).goToResults = goToResults;
         
   
 }
@@ -976,6 +1000,10 @@ isDead(): boolean {
   private checkLevelUp(): void {
   // Use a while loop to handle multiple level-ups at once
     while(this.experience >= this.experienceToNextLevel && !this.isLevelingUp) {
+      // Play level up sound
+      // Phaser multiplies config volume by global volume automatically
+      this.scene.sound.play('level_up', { volume: GAME_CONFIG.SOUNDS.LEVEL_UP });
+      
       // Level up
       this.level++;
 

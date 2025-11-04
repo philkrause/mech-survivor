@@ -97,6 +97,10 @@ export class LaserCannonSystem {
    */
   private fireLaser(): void {
     if (!this.active || !this.player || !this.player.getSprite()) return;
+    
+    // Play laser cannon sound
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('laser_cannon', { volume: GAME_CONFIG.SOUNDS.LASER_CANNON });
 
     const playerSprite = this.player.getSprite();
     const playerPos = { x: playerSprite.x, y: playerSprite.y };

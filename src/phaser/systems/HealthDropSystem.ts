@@ -175,6 +175,10 @@ export class HealthDropSystem {
     const healAmount = GAME_CONFIG.ENEMY.HEALTH_DROP_HEAL_AMOUNT;
     this.player.heal(healAmount);
 
+    // Play health pickup sound
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('health_pickup', { volume: GAME_CONFIG.SOUNDS.HEALTH_PICKUP });
+
     // Visual feedback
     this.createPickupEffect(x, y);
 

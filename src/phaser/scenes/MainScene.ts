@@ -45,6 +45,8 @@ export default class MainScene extends Phaser.Scene {
   private forceSystem!: ForceSystem;
   private flamethrowerSystem!: FlamethrowerSystem;
   private escapeKey!: Phaser.Input.Keyboard.Key;
+  private enterKey!: Phaser.Input.Keyboard.Key;
+  private spaceKey!: Phaser.Input.Keyboard.Key;
   private attackChopperSystem!: AttackChopperSystem;
   private combatDroneSystem!: CombatDroneSystem;
   private laserCannonSystem!: LaserCannonSystem;
@@ -90,8 +92,22 @@ export default class MainScene extends Phaser.Scene {
     // Initialize asset manager and load assets
     this.assetManager = new AssetManager(this);
     this.assetManager.preloadAssets();
-    this.load.audio('game', '../../../assets/audio/sw-song1.mp3');
-    this.load.audio('swing', '../../../assets/audio/swing.mp3');
+    // Game music removed - will need new game music file
+    
+    // Load sound effects
+    this.load.audio('blaster', '../../../assets/audio/laser2.wav');
+    this.load.audio('collect_orb', '../../../assets/audio/collect_orb.wav');
+    this.load.audio('combat_drone', '../../../assets/audio/combat_drone.wav');
+    this.load.audio('explosion', '../../../assets/audio/explosion.wav');
+    this.load.audio('flamethrower', '../../../assets/audio/flamethrower.wav');
+    this.load.audio('health_pickup', '../../../assets/audio/health_pickup.wav');
+    this.load.audio('laser_cannon', '../../../assets/audio/laser_cannon.wav');
+    this.load.audio('laser_cannon2', '../../../assets/audio/laser_cannon2.mp3');
+    this.load.audio('level_up', '../../../assets/audio/level_up.wav');
+    this.load.audio('pause_game', '../../../assets/audio/pause_game.wav');
+    this.load.audio('player_death', '../../../assets/audio/player_death.mp3');
+    this.load.audio('relic_pickup', '../../../assets/audio/relic_pickup.wav');
+    // Swing audio removed - file may be corrupted or missing
   }
 
 
@@ -101,11 +117,8 @@ export default class MainScene extends Phaser.Scene {
    * Create game objects and initialize systems
    */
   create(): void {
-    // stop menu music
-    
-    if (this.music) {
-      this.music.stop();
-    }
+    // stop menu music (if it exists)
+    // Note: Game music removed - will need new game music file
 
 
     // Create the game world
@@ -119,6 +132,8 @@ export default class MainScene extends Phaser.Scene {
 
     if (this.input.keyboard) {
       this.escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+      this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     } else {
       console.warn("Keyboard input plugin not available");
     }
@@ -137,16 +152,16 @@ export default class MainScene extends Phaser.Scene {
       .setScale(2); // Scale the background for zoom effect
 
 
-    // Initialize global volume to 0 (muted) at start - this ensures all sounds respect the default muted state
-    this.sound.volume = 0;
+    // Initialize global volume to 50% by default
+    this.sound.volume = 0.5;
 
-    // music
-    this.music = this.sound.add('game', {
-      loop: true,     // makes it loop
-      volume: 0     // Start muted
-    });
-
-    this.music.play();
+    // Game music removed - will need new game music file
+    // When adding new game music, uncomment and update:
+    // this.music = this.sound.add('game_music', {
+    //   loop: true,
+    //   volume: 1.0 // Full volume (respects global volume, which is 0.5 by default)
+    // });
+    // this.music.play();
 
     // ****** Instatiate SYSTEMS******   
 
@@ -450,6 +465,21 @@ export default class MainScene extends Phaser.Scene {
         this
       );
     }
+
+    // Walker enemy collision detection
+    if (projectileGroup && this.walkerEnemySystem) {
+      this.physics.add.overlap(
+        projectileGroup,
+        this.walkerEnemySystem.getEnemyGroup(),
+        this.handleProjectileWalkerCollision as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        // Only check collisions for active projectiles and enemies
+        (projectile, enemy) => {
+          return (projectile as Phaser.Physics.Arcade.Sprite).active &&
+            (enemy as Phaser.Physics.Arcade.Sprite).active;
+        },
+        this
+      );
+    }
     
     // Set up collisions between ground-based enemies
     // AT enemies collide with regular enemies (both are ground-based)
@@ -574,6 +604,37 @@ export default class MainScene extends Phaser.Scene {
     if (isDead) {
       // Emit death effect event
       this.events.emit('enemy-death', e.x, e.y, 'at_enemy');
+    }
+    
+    // Deactivate projectile
+    this.projectileSystem.deactivate(p);
+  }
+
+  /**
+   * Handle collision between projectile and Walker enemy
+   */
+  private handleProjectileWalkerCollision(
+    projectile: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile,
+    enemy: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody | Phaser.Tilemaps.Tile
+  ): void {
+    const p = projectile as Phaser.Physics.Arcade.Sprite;
+    const e = enemy as Phaser.Physics.Arcade.Sprite;
+
+    const damage: number = p.getData('damage');
+    const isCritical: boolean = p.getData('critical') ?? false;
+    
+    // Emit hit effect event
+    this.events.emit('projectile-hit', e.x, e.y, isCritical);
+    
+    // Track damage for stats
+    this.statsTracker.recordWeaponDamage('blaster', damage);
+    
+    // Damage the Walker enemy
+    const isDead = this.walkerEnemySystem.damageEnemy(e, damage, 0, isCritical);
+    
+    if (isDead) {
+      // Emit death effect event
+      this.events.emit('enemy-death', e.x, e.y, 'walker');
     }
     
     // Deactivate projectile
@@ -855,11 +916,15 @@ export default class MainScene extends Phaser.Scene {
    * Set music volume
    */
   private setMusicVolume(volume: number): void {
-    if (this.music) {
-      (this.music as Phaser.Sound.WebAudioSound).setVolume(volume);
-    }
-    // Store volume for future music
+    // Set global volume (affects all sounds)
     this.sound.volume = volume;
+    
+    // Update music volume (music should be at 1.0 to respect global volume)
+    // The effective volume will be volume * 1.0 = volume
+    // Note: Game music removed - will need new game music file
+    if (this.music) {
+      (this.music as Phaser.Sound.WebAudioSound).setVolume(1.0);
+    }
   }
 
   /**
@@ -881,18 +946,25 @@ export default class MainScene extends Phaser.Scene {
       return;
     }
 
-    // Disable ESC while relic screen is open or while paused
+    // Check for game over screen keyboard input (Enter/Space to go to results)
+    if ((this as any).goToResults && (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey))) {
+      (this as any).goToResults();
+      return; // Exit early to prevent other input processing
+    }
+
+    // Check if relic screen is open - skip all updates during relic selection
     const relicOpen = this.relicSystem && this.relicSystem.isScreenOpen && this.relicSystem.isScreenOpen();
+    
+    // Disable ESC while relic screen is open or while paused
     if (!this.isPaused && !relicOpen) {
       if (Phaser.Input.Keyboard.JustDown(this.escapeKey)) {
         this.pauseGame();
       }
     }
 
-
-
-    // Skip update if game is paused
+    // Skip update if game is paused OR relic screen is open
     if (this.isPaused) return;
+    if (relicOpen) return; // Skip all updates during relic screen to improve performance
 
     // Performance profiling (when enabled)
     let perfStart = 0;

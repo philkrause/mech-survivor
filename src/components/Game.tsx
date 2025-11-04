@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import MainScene from '../phaser/scenes/MainScene';
 import StartScene from '../phaser/scenes/StartScene';
 import ResultsScene from '../phaser/scenes/ResultsScene';
+import IntroScene from '../phaser/scenes/IntroScene';
 
 import { GAME_CONFIG } from '../phaser/config/GameConfig';
 
@@ -28,16 +29,18 @@ const Game: React.FC = () => {
     }
 
     // Game configuration - fullscreen responsive
+    // Use RESIZE mode to fill the screen while maintaining internal resolution
+    const baseWidth = 1024;
+    const baseHeight = 768;
+    
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.WEBGL, // Force WebGL for better performance in Chrome
       width: window.innerWidth,
       height: window.innerHeight,
       parent: gameContainerRef.current || undefined,
       scale: {
-        mode: Phaser.Scale.RESIZE, // Automatically resize to fit container
+        mode: Phaser.Scale.RESIZE, // Resize to fill window, maintain internal resolution for game logic
         autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game
-        width: window.innerWidth,
-        height: window.innerHeight,
       },
       physics: {
         default: 'arcade',
@@ -58,13 +61,13 @@ const Game: React.FC = () => {
         target: 60,
         forceSetTimeOut: false, // Don't use setTimeout throttling
       },
-      scene: [StartScene, MainScene, ResultsScene],
+      scene: [IntroScene, StartScene, MainScene, ResultsScene],
     };
 
     // Create new game instance
     gameRef.current = new Phaser.Game(config);
 
-    // Handle window resize
+    // Handle window resize to keep game fullscreen
     const handleResize = () => {
       if (gameRef.current) {
         gameRef.current.scale.resize(window.innerWidth, window.innerHeight);

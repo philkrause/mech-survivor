@@ -23,15 +23,18 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   create(): void {
-    const cam = this.cameras.main;
-    const centerX = cam.centerX;
-    const centerY = cam.centerY;
+    // Use scale dimensions for proper centering (works with RESIZE mode)
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
+    const centerX = gameWidth / 2;
+    const centerY = gameHeight / 2;
 
     // Background
-    this.add.rectangle(centerX, centerY, cam.width, cam.height, 0x1a2332, 1).setDepth(0);
+    this.add.rectangle(centerX, centerY, gameWidth, gameHeight, 0x1a2332, 1).setDepth(0);
 
-    // Title
-    this.add.text(centerX, 40, 'RESULTS', {
+    // Title - use proportional positioning
+    const titleY = gameHeight * 0.05; // 5% from top
+    this.add.text(centerX, titleY, 'RESULTS', {
       fontSize: '72px',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -40,82 +43,85 @@ export default class ResultsScene extends Phaser.Scene {
       align: 'center'
     }).setOrigin(0.5).setDepth(1);
 
-    // Left panel - Game stats (moved further left to use more screen width)
-    const leftPanelX = 80; // Start from left edge with padding
-    let currentY = 120;
+    // Left panel - Game stats - use proportional positioning for mobile
+    const leftPanelX = gameWidth * 0.08; // 8% from left edge
+    let currentY = gameHeight * 0.15; // Start at 15% from top
 
-    // Basic stats - use wider spacing between labels and values
-    // "Enemies Defeated:" is the longest label (~300px at 32px font), so we need enough space for it
+    // Basic stats - use proportional spacing between labels and values
     // Values should be right-aligned at a consistent position with adequate spacing
-    const valueX = leftPanelX + 450; // Fixed X position for all values (right-aligned, 450px from left to prevent overlap)
+    const valueX = gameWidth * 0.55; // 55% from left (responsive for mobile)
     
+    // Calculate responsive font size based on screen width
+    const baseFontSize = Math.max(24, Math.min(32, gameWidth * 0.03)); // Scale between 24-32px
+    const headingFontSize = Math.max(20, Math.min(24, gameWidth * 0.025)); // Scale between 20-24px
+    const rowSpacing = gameHeight * 0.05; // 5% of screen height between rows
+
     this.add.text(leftPanelX, currentY, 'Survived:', {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffffff'
     }).setOrigin(0, 0.5);
     
     const survivalMinutes = Math.floor(this.gameStats.survivalTime / 60000);
     const survivalSeconds = Math.floor((this.gameStats.survivalTime % 60000) / 1000);
     this.add.text(valueX, currentY, `${survivalMinutes}:${survivalSeconds.toString().padStart(2, '0')}`, {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffff00'
     }).setOrigin(1, 0.5); // Right-aligned
-    currentY += 40;
+    currentY += rowSpacing;
 
     this.add.text(leftPanelX, currentY, 'Level Reached:', {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffffff'
     }).setOrigin(0, 0.5);
     this.add.text(valueX, currentY, `${this.gameStats.levelReached}`, {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffff00'
     }).setOrigin(1, 0.5); // Right-aligned
-    currentY += 40;
+    currentY += rowSpacing;
 
     this.add.text(leftPanelX, currentY, 'Enemies Defeated:', {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffffff'
     }).setOrigin(0, 0.5);
     this.add.text(valueX, currentY, `${this.gameStats.enemiesDefeated}`, {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffff00'
     }).setOrigin(1, 0.5); // Right-aligned
-    currentY += 60;
+    currentY += rowSpacing * 1.5;
 
-    // Weapon stats table header - adjust column spacing with more room to prevent overlap
-    // Moved further left and increased spacing between LV and Damage columns
+    // Weapon stats table header - use proportional column spacing for mobile
     const weaponCol1 = leftPanelX; // Weapon name (left-aligned)
-    const weaponCol2 = leftPanelX + 180; // LV (right-aligned, more space for long weapon names)
-    const weaponCol3 = weaponCol2 + 110; // Damage (right-aligned, 110px gap from LV to prevent overlap)
-    const weaponCol4 = weaponCol3 + 100; // Time (right-aligned, 100px gap from Damage)
-    const weaponCol5 = weaponCol4 + 90; // DPS (right-aligned, 90px gap from Time)
+    const weaponCol2 = gameWidth * 0.35; // LV (right-aligned, responsive)
+    const weaponCol3 = gameWidth * 0.48; // Damage (right-aligned, responsive)
+    const weaponCol4 = gameWidth * 0.62; // Time (right-aligned, responsive)
+    const weaponCol5 = gameWidth * 0.75; // DPS (right-aligned, responsive)
     
     this.add.text(weaponCol1, currentY, 'Weapon', {
-      fontSize: '24px',
+      fontSize: `${headingFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0, 0.5);
     this.add.text(weaponCol2, currentY, 'LV', {
-      fontSize: '24px',
+      fontSize: `${headingFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(1, 0.5); // Right-aligned
     this.add.text(weaponCol3, currentY, 'Damage', {
-      fontSize: '24px',
+      fontSize: `${headingFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(1, 0.5); // Right-aligned
     this.add.text(weaponCol4, currentY, 'Time', {
-      fontSize: '24px',
+      fontSize: `${headingFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(1, 0.5); // Right-aligned
     this.add.text(weaponCol5, currentY, 'DPS', {
-      fontSize: '24px',
+      fontSize: `${headingFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(1, 0.5); // Right-aligned
-    currentY += 30;
+    currentY += rowSpacing * 0.75;
 
     // Weapon stats rows
     this.gameStats.weapons.forEach(weapon => {
@@ -125,56 +131,58 @@ export default class ResultsScene extends Phaser.Scene {
       const timeStr = `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`;
       const dpsStr = weapon.dps.toFixed(1);
 
-      // Weapon name - limit width to prevent overlap with LV column
+      // Weapon name - use responsive width based on screen size
+      const weaponNameMaxWidth = gameWidth * 0.25; // 25% of screen width
       const weaponNameText = this.add.text(weaponCol1, currentY, weapon.name, {
-        fontSize: '20px',
+        fontSize: `${headingFontSize * 0.85}px`, // Slightly smaller than heading
         color: '#ffffff',
-        fixedWidth: 170 // Limit width to prevent overlap with LV column
+        fixedWidth: weaponNameMaxWidth
       }).setOrigin(0, 0.5);
       
       // If name is too long, truncate it
-      if (weaponNameText.width > 170) {
-        weaponNameText.setText(weapon.name.substring(0, 12) + '...');
+      if (weaponNameText.width > weaponNameMaxWidth) {
+        const maxChars = Math.floor(weaponNameMaxWidth / (headingFontSize * 0.85 * 0.6)); // Approximate chars
+        weaponNameText.setText(weapon.name.substring(0, maxChars) + '...');
       }
       
       this.add.text(weaponCol2, currentY, weapon.level > 0 ? `${weapon.level}` : '—', {
-        fontSize: '20px',
+        fontSize: `${headingFontSize * 0.85}px`,
         color: '#ffff00'
       }).setOrigin(1, 0.5); // Right-aligned
       
       this.add.text(weaponCol3, currentY, damageStr, {
-        fontSize: '20px',
+        fontSize: `${headingFontSize * 0.85}px`,
         color: '#ffff00'
       }).setOrigin(1, 0.5); // Right-aligned
       
       this.add.text(weaponCol4, currentY, timeStr, {
-        fontSize: '20px',
+        fontSize: `${headingFontSize * 0.85}px`,
         color: '#ffff00'
       }).setOrigin(1, 0.5); // Right-aligned
       
       this.add.text(weaponCol5, currentY, dpsStr, {
-        fontSize: '20px',
+        fontSize: `${headingFontSize * 0.85}px`,
         color: '#ffff00'
       }).setOrigin(1, 0.5); // Right-aligned
       
-      currentY += 25;
+      currentY += rowSpacing * 0.5;
     });
 
-    // Right panel - Relics (moved further right to avoid overlap with weapon stats)
-    const rightPanelX = 720; // Positioned on the right side, leaving space from weapon table
-    currentY = 120;
+    // Right panel - Relics (use proportional positioning for mobile)
+    const rightPanelX = gameWidth * 0.82; // 82% from left (responsive)
+    currentY = gameHeight * 0.15; // Start at 15% from top
 
     this.add.text(rightPanelX, currentY, 'Relics Found:', {
-      fontSize: '32px',
+      fontSize: `${baseFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0, 0.5);
-    currentY += 40;
+    currentY += rowSpacing;
 
     // Display relics - get names from upgrade system
     if (this.gameStats.relics.length === 0) {
       this.add.text(rightPanelX, currentY, 'None', {
-        fontSize: '24px',
+        fontSize: `${headingFontSize}px`,
         color: '#888888'
       }).setOrigin(0, 0.5);
     } else {
@@ -187,21 +195,26 @@ export default class ResultsScene extends Phaser.Scene {
           }
         }
         this.add.text(rightPanelX, currentY, `• ${relicName}`, {
-          fontSize: '20px',
+          fontSize: `${headingFontSize * 0.85}px`,
           color: '#ffff00'
         }).setOrigin(0, 0.5);
-        currentY += 25;
+        currentY += rowSpacing * 0.5;
       });
     }
 
-    // Play Again button at bottom
-    const playAgainButton = this.add.rectangle(centerX, cam.height - 80, 300, 60, 0x5a9dd5, 1)
+    // Play Again button at bottom - use proportional positioning
+    const buttonY = gameHeight * 0.9; // 90% from top
+    const buttonWidth = Math.min(300, gameWidth * 0.4); // Responsive width, max 300px
+    const buttonHeight = Math.min(60, gameHeight * 0.08); // Responsive height, max 60px
+    const buttonFontSize = Math.max(24, Math.min(36, gameWidth * 0.035)); // Responsive font size
+    
+    const playAgainButton = this.add.rectangle(centerX, buttonY, buttonWidth, buttonHeight, 0x5a9dd5, 1)
       .setStrokeStyle(4, 0xffd700)
       .setInteractive({ useHandCursor: true })
       .setDepth(1);
 
-    const playAgainText = this.add.text(centerX, cam.height - 80, 'PLAY AGAIN', {
-      fontSize: '36px',
+    const playAgainText = this.add.text(centerX, buttonY, 'PLAY AGAIN', {
+      fontSize: `${buttonFontSize}px`,
       color: '#ffffff',
       fontStyle: 'bold',
       stroke: '#000000',

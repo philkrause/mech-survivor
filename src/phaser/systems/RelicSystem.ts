@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { UpgradeSystem } from './UpgradeSystem';
 import { GameUI } from '../ui/GameUI';
+import { GAME_CONFIG } from '../config/GameConfig';
 
 export class RelicSystem {
   private scene: Phaser.Scene;
@@ -54,7 +55,8 @@ export class RelicSystem {
       console.warn('Texture key "byoda" not found; skipping fountain.');
       return;
     }
-    const count = 42; // number of sprites to spray
+    // Reduced count for better performance - fewer sprites
+    const count = 20; // Reduced from 42 to 20 for better performance
     const gravity = 0.22; // manual gravity per tick
     const lifetimeMs = 1800; // lifespan per sprite
     const dt = 16; // ms per update step
@@ -123,8 +125,8 @@ export class RelicSystem {
       }
       // spawn one burst
       this.startYodaFountain(originX, originY);
-      // schedule next burst
-      const id = window.setTimeout(loop, 220);
+      // schedule next burst - increased interval for better performance
+      const id = window.setTimeout(loop, 400); // Increased from 220 to 400ms for fewer bursts
       this.yodaTimers.push(id);
     };
     loop();
@@ -235,6 +237,10 @@ export class RelicSystem {
     this.selectedRelicId = null; // Reset for new relic selection
     this.isAnimationComplete = false; // Reset animation state
 
+    // Play relic pickup sound when player picks up the relic (not when selecting)
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('relic_pickup', { volume: GAME_CONFIG.SOUNDS.RELIC_PICKUP });
+
     // Emit relic collection particle effect
     this.scene.events.emit('relic-collected', chest.x, chest.y);
 
@@ -250,6 +256,13 @@ export class RelicSystem {
     // Pause the game exactly like level up
     this.scene.physics.pause();
     this.scene.time.paused = true;
+    
+    // Stop all particle emitters to improve performance during relic screen
+    this.scene.children.each((child: any) => {
+      if (child && child.type === 'ParticleEmitterManager') {
+        child.stop();
+      }
+    });
 
     // Show relic selection screen
     this.showRelicSelectionScreen(chest.x, chest.y);
@@ -380,10 +393,10 @@ export class RelicSystem {
   private startSlotMachineAnimation(relicDisplay: Phaser.GameObjects.Sprite, onComplete: () => void): void {
     let currentFrame = 0;
     const totalFrames = 60; // Total relics in spritesheet
-    let animationSpeed = 50; // Much faster initial speed
+    let animationSpeed = 80; // Increased from 50 to 80ms for better performance
     const maxCycles = 1; // Only 1 cycle - very short
     let frameCount = 0;
-    const totalFramesToShow = maxCycles * totalFrames + Math.floor(totalFrames * 0.3); // Show 1.3 cycles
+    const totalFramesToShow = maxCycles * totalFrames + Math.floor(totalFrames * 0.2); // Reduced from 1.3 to 1.2 cycles for faster completion
     
 
     const animate = () => {
@@ -574,6 +587,8 @@ export class RelicSystem {
       return;
     }
 
+    // Relic pickup sound moved to collectRelic() - plays when player picks up relic from map
+    
     // Apply the relic effect
     this.upgradeSystem.applyUpgrade(selectedRelicId);
     

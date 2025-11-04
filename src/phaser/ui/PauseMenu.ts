@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_CONFIG } from '../config/GameConfig';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -17,7 +18,7 @@ export class PauseMenu {
   private volumeText!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
   private overlay!: Phaser.GameObjects.Rectangle;
-  private currentVolume: number = 0.0;
+  private currentVolume: number = 0.5; // Default to 50%
   private isVolumeSelected: boolean = false;
 
   constructor(scene: Phaser.Scene, options: PauseMenuOptions) {
@@ -92,6 +93,13 @@ export class PauseMenu {
     this.isVisible = true;
     this.selectedIndex = 0;
     this.isVolumeSelected = false;
+    
+    // Sync currentVolume with actual global volume
+    this.currentVolume = this.scene.sound.volume;
+    
+    // Play pause sound
+    // Phaser multiplies config volume by global volume automatically
+    this.scene.sound.play('pause_game', { volume: GAME_CONFIG.SOUNDS.PAUSE_GAME });
     
     // Sync initial volume
     this.options.onVolumeChange(this.currentVolume);

@@ -561,8 +561,12 @@ export class TfighterSystem {
    */
   public updateHealthBar(enemy: Phaser.Physics.Arcade.Sprite): void {
     const healthBar = this.healthBars.get(enemy);
-    if (!healthBar) return;
+    if (!healthBar || !enemy.active) return;
 
+    const camera = this.scene.cameras.main;
+    const x = enemy.x - camera.scrollX - 15;
+    const y = enemy.y - camera.scrollY - 30;
+    
     // Clear previous graphics
     healthBar.clear();
 
@@ -577,7 +581,7 @@ export class TfighterSystem {
 
     // Draw background (empty health)
     healthBar.fillStyle(0x222222, 0.8);
-    healthBar.fillRect(-width / 2, -20, width, height);
+    healthBar.fillRect(x, y, width, height);
 
     // Draw health (filled portion)
     if (healthPercent > 0) {
@@ -590,11 +594,16 @@ export class TfighterSystem {
         healthBar.fillStyle(0xff0000, 0.8); // Red
       }
 
-      healthBar.fillRect(-width / 2, -20, width * healthPercent, height);
+      healthBar.fillRect(x, y, width * healthPercent, height);
     }
+    
+    // Border
+    healthBar.lineStyle(1, 0xffffff, 1);
+    healthBar.strokeRect(x, y, width, height);
 
     // Set depth to ensure it renders above the enemy
     healthBar.setDepth(GAME_CONFIG.TFIGHTER.DEPTH + 1);
+    healthBar.setScrollFactor(0); // Fix to camera
   }
 
   /**
@@ -604,8 +613,9 @@ export class TfighterSystem {
     const healthBar = this.healthBars.get(enemy);
     if (!healthBar) return;
 
-    healthBar.setPosition(enemy.x, enemy.y);
-    healthBar.setVisible(true);
+    // Health bar position is now calculated in updateHealthBar using absolute coordinates
+    // Just ensure it's visible
+    healthBar.setVisible(enemy.active);
   }
 
    /**
@@ -638,8 +648,8 @@ export class TfighterSystem {
        
         //this.moveEnemyTowardTarget(enemy);
 
-        // adjust to your preferred sizeate health bar position
-        this.updateHealthBarPosition(enemy);
+        // Update health bar position (health bar is now drawn with absolute coordinates in updateHealthBar)
+        this.updateHealthBar(enemy);
       } else {
         // Optionally apply simplified physics for off-screen enemies
         this.moveOffscreenEnemyBasic(enemy);
