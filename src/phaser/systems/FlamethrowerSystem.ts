@@ -4,7 +4,6 @@ import { EnemySystem } from './EnemySystem';
 import { TfighterSystem } from './TfighterSystem';
 import { AtEnemySystem } from './AtEnemySystem';
 import { WalkerEnemySystem } from './WalkerEnemySystem';
-import { SoundManager } from '../utils/SoundManager';
 
 import { Player } from '../entities/Player';
 
@@ -32,7 +31,6 @@ export class FlamethrowerSystem {
   private walkerEnemySystem: WalkerEnemySystem | null = null;
   private tfighterSystem: TfighterSystem;
   private player: Player;
-  private soundManager: SoundManager;
 
 
 
@@ -53,12 +51,11 @@ export class FlamethrowerSystem {
   };
 
 
-  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player, soundManager: SoundManager, atEnemySystem?: AtEnemySystem, walkerEnemySystem?: WalkerEnemySystem) {
+  constructor(scene: Phaser.Scene, enemySystem: EnemySystem, tfighterSystem: TfighterSystem, player: Player, atEnemySystem?: AtEnemySystem, walkerEnemySystem?: WalkerEnemySystem) {
     this.scene = scene;
     this.enemySystem = enemySystem;
     this.tfighterSystem = tfighterSystem;
     this.player = player;
-    this.soundManager = soundManager;
     this.atEnemySystem = atEnemySystem || null;
     this.walkerEnemySystem = walkerEnemySystem || null;
     this.slashTimer = undefined;

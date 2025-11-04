@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import StartScene from './StartScene';
 
 /**
  * Intro story scene that plays before the main menu
@@ -45,7 +44,6 @@ export default class IntroScene extends Phaser.Scene {
     this.cameras.main.fadeIn(800, 0, 0, 0);
 
     const centerX = this.scale.width / 2;
-    const centerY = this.scale.height / 2;
 
     // Create skip text hint
     this.skipText = this.add.text(

@@ -30,9 +30,6 @@ const Game: React.FC = () => {
 
     // Game configuration - fullscreen responsive
     // Use RESIZE mode to fill the screen while maintaining internal resolution
-    const baseWidth = 1024;
-    const baseHeight = 768;
-    
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.WEBGL, // Force WebGL for better performance in Chrome
       width: window.innerWidth,

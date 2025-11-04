@@ -171,6 +171,8 @@ export default class MainScene extends Phaser.Scene {
     
     // Initialize sound manager for centralized volume control
     this.soundManager = new SoundManager(this);
+    // Assign to scene so Player can access it
+    (this as any).soundManager = this.soundManager;
     
     this.enemySystem = new EnemySystem(this, this.player.getSprite(), this.player);
 
@@ -191,7 +193,7 @@ export default class MainScene extends Phaser.Scene {
 
     this.laserCannonSystem = new LaserCannonSystem(this, this.player);
 
-    this.flamethrowerSystem = new FlamethrowerSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.soundManager, this.atEnemySystem, this.walkerEnemySystem);
+    this.flamethrowerSystem = new FlamethrowerSystem(this, this.enemySystem, this.tfighterSystem, this.player, this.atEnemySystem, this.walkerEnemySystem);
     
     // Set enemy systems for laser cannon
     this.laserCannonSystem.setEnemySystems(this.enemySystem, this.atEnemySystem, this.walkerEnemySystem, this.tfighterSystem);

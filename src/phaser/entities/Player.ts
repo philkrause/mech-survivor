@@ -816,7 +816,7 @@ export class Player {
     }
 
     // Show Game Over text - fixed to camera viewport (not world space)
-    const gameOverText = this.scene.add.text(
+    this.scene.add.text(
       cam.centerX,
       cam.centerY - 50,
       `game over`, {
