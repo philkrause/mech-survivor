@@ -350,7 +350,6 @@ export class AirStrikeSystem {
    */
   public update(): void {
     // Clean up any expired strikes
-    const now = this.scene.time.now;
     this.activeStrikes = this.activeStrikes.filter(strike => {
       // Keep strikes that haven't impacted yet or are still showing explosion
       if (!strike.explosion) {
