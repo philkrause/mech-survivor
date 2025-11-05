@@ -155,9 +155,9 @@ export class Player {
     // Create a spotlight for the flashlight effect
     // Position it at the player's center
     const center = this.sprite.getCenter();
-    this.flashlight = this.scene.lights.addLight(center.x, center.y, 300); // 300 pixel radius
-    this.flashlight.setColor(0xffffff); // White light
-    this.flashlight.setIntensity(1.5); // Bright light
+    this.flashlight = this.scene.lights.addLight(center.x, center.y, GAME_CONFIG.LIGHTING.PLAYER_LIGHT.RADIUS);
+    this.flashlight.setColor(GAME_CONFIG.LIGHTING.PLAYER_LIGHT.COLOR);
+    this.flashlight.setIntensity(GAME_CONFIG.LIGHTING.PLAYER_LIGHT.INTENSITY);
   }
 
   /**

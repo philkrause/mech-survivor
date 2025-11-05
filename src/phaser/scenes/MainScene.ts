@@ -145,9 +145,9 @@ export default class MainScene extends Phaser.Scene {
 
 
     // Enable lighting system (only if lights plugin is available)
-    if (this.lights) {
+    if (this.lights && GAME_CONFIG.LIGHTING.ENABLED) {
       this.lights.enable();
-      this.lights.setAmbientColor(0x333333); // Medium-dark ambient lighting (brighter to see glow better from distance)
+      this.lights.setAmbientColor(GAME_CONFIG.LIGHTING.AMBIENT_COLOR);
     }
 
     // Create a tileSprite background
@@ -168,7 +168,7 @@ export default class MainScene extends Phaser.Scene {
     }
     
     // Darken the background for lighting effect
-    this.background.setTint(0x333333); // Darken background
+    this.background.setTint(GAME_CONFIG.LIGHTING.AMBIENT_COLOR);
 
 
     // Initialize global volume to 50% by default

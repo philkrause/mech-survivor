@@ -563,7 +563,7 @@ export class EnemySystem {
 
     // Create a point light on the enemy with a red glow
     try {
-      const light = this.scene.lights.addLight(enemy.x, enemy.y, 120);
+      const light = this.scene.lights.addLight(enemy.x, enemy.y, GAME_CONFIG.LIGHTING.ENEMY_GLOW.RADIUS);
       if (!light) {
         // Retry after a short delay
         this.scene.time.delayedCall(50, () => {
@@ -574,8 +574,8 @@ export class EnemySystem {
         return;
       }
       
-      light.setColor(0xff0000); // Red glow
-      light.setIntensity(1.5); // Slightly brighter for better visibility
+      light.setColor(GAME_CONFIG.LIGHTING.ENEMY_GLOW.COLOR);
+      light.setIntensity(GAME_CONFIG.LIGHTING.ENEMY_GLOW.INTENSITY);
       
       this.enemyLights.set(enemy, light);
     } catch (error) {
@@ -703,6 +703,34 @@ export class EnemySystem {
       
       //const type = (enemy as any).enemyType;
       
+      // Ensure enemy has Light2D pipeline enabled (can be lost during animation changes)
+      if (this.scene.lights && enemy.pipeline?.name !== 'Light2D') {
+        enemy.setPipeline('Light2D');
+      }
+      
+      // Only create lights for enemies within expanded camera view (GPU has limited lights ~128)
+      // This ensures nearby/visible enemies always have glow
+      const isNearCamera = Phaser.Geom.Rectangle.Contains(this.cameraRect, enemy.x, enemy.y);
+      
+      if (isNearCamera) {
+        // Create light for nearby enemies
+        if (!this.enemyLights.has(enemy) && this.scene.lights && enemy.active) {
+          this.createEnemyGlow(enemy);
+        }
+        
+        // Update light position
+        if (this.enemyLights.has(enemy)) {
+          this.updateEnemyGlow(enemy);
+        }
+      } else {
+        // Remove light from far-away enemies to free up light slots
+        const light = this.enemyLights.get(enemy);
+        if (light && this.scene.lights) {
+          this.scene.lights.removeLight(light);
+          this.enemyLights.delete(enemy);
+        }
+      }
+      
       // Only process on-screen enemies or those close to screen
       if (Phaser.Geom.Rectangle.Contains(this.cameraRect, enemy.x, enemy.y)) {
         this.visibleEnemies.push(enemy);
@@ -728,17 +756,6 @@ export class EnemySystem {
         }
         // adjust to your preferred sizeate health bar position
         this.updateHealthBarPosition(enemy);
-        
-        // Ensure enemy has a glow light (safety check - should already be created at spawn)
-        if (!this.enemyLights.has(enemy) && this.scene.lights && enemy.active) {
-          // Create light immediately if missing
-          this.createEnemyGlow(enemy);
-        }
-        
-        // Always update light position if it exists
-        if (this.enemyLights.has(enemy)) {
-          this.updateEnemyGlow(enemy);
-        }
       } else {
         // Optionally apply simplified physics for off-screen enemies
         this.moveOffscreenEnemyBasic(enemy);

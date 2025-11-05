@@ -235,6 +235,22 @@ export const GAME_CONFIG = {
     LASER_DAMAGE_INTERVAL: 200, // ms - interval between damage ticks when enemy is in laser
   },
 
+  LIGHTING: {
+    ENABLED: true, // Enable/disable lighting system
+    MAX_LIGHTS: 128, // Maximum number of lights (Phaser default is 10, GPU limit is ~128-256 depending on hardware)
+    AMBIENT_COLOR: 0x333333, // Medium-dark ambient lighting (brighter to see glow better from distance)
+    PLAYER_LIGHT: {
+      COLOR: 0xffffff, // White light for player
+      INTENSITY: 1, // Light intensity
+      RADIUS: 200 // Light radius in pixels (player's flashlight)
+    },
+    ENEMY_GLOW: {
+      COLOR: 0xff0000, // Red glow for enemies
+      INTENSITY: 1, // Light intensity
+      RADIUS: 100 // Light radius in pixels
+    }
+  },
+
   UI: {
     TEXT_STYLE: {
       fontSize: '18px',

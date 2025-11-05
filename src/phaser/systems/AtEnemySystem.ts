@@ -358,7 +358,7 @@ export class AtEnemySystem {
 
     // Create a point light on the enemy with a red glow
     try {
-      const light = this.scene.lights.addLight(enemy.x, enemy.y, 120);
+      const light = this.scene.lights.addLight(enemy.x, enemy.y, GAME_CONFIG.LIGHTING.ENEMY_GLOW.RADIUS);
       if (!light) {
         this.scene.time.delayedCall(50, () => {
           if (enemy.active && !this.enemyLights.has(enemy)) {
@@ -368,8 +368,8 @@ export class AtEnemySystem {
         return;
       }
       
-      light.setColor(0xff0000); // Red glow
-      light.setIntensity(1.5); // Match other systems
+      light.setColor(GAME_CONFIG.LIGHTING.ENEMY_GLOW.COLOR);
+      light.setIntensity(GAME_CONFIG.LIGHTING.ENEMY_GLOW.INTENSITY);
       
       this.enemyLights.set(enemy, light);
     } catch (error) {
@@ -605,6 +605,36 @@ export class AtEnemySystem {
 
     this.updateCameraRect();
     
+    // Manage enemy lights efficiently (GPU has limited lights ~128)
+    this.activeEnemies.forEach(enemy => {
+      // Ensure enemy has Light2D pipeline enabled (can be lost during animation changes)
+      if (this.scene.lights && enemy.pipeline?.name !== 'Light2D') {
+        enemy.setPipeline('Light2D');
+      }
+      
+      // Only create lights for enemies within expanded camera view
+      const isNearCamera = this.cameraRect.contains(enemy.x, enemy.y);
+      
+      if (isNearCamera) {
+        // Create light for nearby enemies
+        if (!this.enemyLights.has(enemy) && this.scene.lights && enemy.active) {
+          this.createEnemyGlow(enemy);
+        }
+        
+        // Update light position
+        if (this.enemyLights.has(enemy)) {
+          this.updateEnemyGlow(enemy);
+        }
+      } else {
+        // Remove light from far-away enemies to free up light slots
+        const light = this.enemyLights.get(enemy);
+        if (light && this.scene.lights) {
+          this.scene.lights.removeLight(light);
+          this.enemyLights.delete(enemy);
+        }
+      }
+    });
+    
     // Update visible enemies
     this.visibleEnemies = Array.from(this.activeEnemies).filter((enemy: Phaser.Physics.Arcade.Sprite) => 
       enemy.active && this.cameraRect.contains(enemy.x, enemy.y)
@@ -686,15 +716,6 @@ export class AtEnemySystem {
     if (this.healthBarsEnabled) {
       this.updateHealthBar(enemy);
     }
-    
-    // Ensure enemy has a glow light (safety check for edge cases)
-    if (!this.enemyLights.has(enemy) && this.scene.lights) {
-      console.warn('[AtEnemySystem] update: enemy missing glow light, creating now');
-      this.createEnemyGlow(enemy);
-    }
-    
-    // Update enemy glow light position
-    this.updateEnemyGlow(enemy);
   }
 
   /**

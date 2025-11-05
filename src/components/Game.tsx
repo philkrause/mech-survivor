@@ -52,6 +52,7 @@ const Game: React.FC = () => {
         roundPixels: true,
         powerPreference: 'high-performance', // Request high performance GPU
         transparent: true, // Allow page background to show through
+        maxLights: GAME_CONFIG.LIGHTING.MAX_LIGHTS, // Increase from default 10 to support many enemy glows
       },
       backgroundColor: 'transparent',
       fps: {
