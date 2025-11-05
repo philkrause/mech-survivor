@@ -24,6 +24,7 @@ export class Player {
   private wasdKeys!: GameKeys;
   private dead: boolean = false;
   private scene: Phaser.Scene;
+  private flashlight!: Phaser.GameObjects.Light; // Flashlight for the player
   // Blaster properties
   private attackTimer: Phaser.Time.TimerEvent | null = null;
   private projectileSystem: ProjectileSystem | null = null;
@@ -128,11 +129,52 @@ export class Player {
     this.health = this.maxHealth;
     this.projectileSystem = projectileSystem
 
+    // Create flashlight for the player (only if lights are available)
+    if (this.scene.lights) {
+      // Enable lighting on player sprite
+      this.sprite.setPipeline('Light2D');
+      this.createFlashlight();
+    }
+
     // Listen for experience collection events
     this.scene.events.on('experience-collected', this.onExperienceCollected, this);
 
     // Initialize blaster since player starts with it
     this.initProjectilePool();
+  }
+
+  /**
+   * Create flashlight that follows the player
+   */
+  private createFlashlight(): void {
+    // Check if lights plugin is available
+    if (!this.scene.lights) {
+      return;
+    }
+
+    // Create a spotlight for the flashlight effect
+    // Position it at the player's center
+    const center = this.sprite.getCenter();
+    this.flashlight = this.scene.lights.addLight(center.x, center.y, 300); // 300 pixel radius
+    this.flashlight.setColor(0xffffff); // White light
+    this.flashlight.setIntensity(1.5); // Bright light
+  }
+
+  /**
+   * Update flashlight position to follow player
+   */
+  private updateFlashlight(): void {
+    if (!this.flashlight || !this.sprite.active) {
+      return;
+    }
+
+    // Update flashlight position to follow player
+    const center = this.sprite.getCenter();
+    this.flashlight.x = center.x;
+    this.flashlight.y = center.y;
+
+    // Flashlight follows player direction (for now, it's a point light, so rotation doesn't affect it)
+    // Could switch to a spotlight with cone angle if needed
   }
 
 
@@ -799,6 +841,12 @@ export class Player {
     if (this.sprite && this.sprite.body) {
       this.sprite.setVelocity(0, 0);
     }
+    
+    // Remove flashlight when player dies
+    if (this.flashlight && this.scene.lights) {
+      this.scene.lights.removeLight(this.flashlight);
+    }
+    
     const cam = this.scene.cameras.main
     //death animation
     this.deathVisual();
@@ -1534,6 +1582,9 @@ deathVisual(): void {
 
   // Update dash cooldown
   this.updateDashCooldown();
+
+  // Update flashlight position
+  this.updateFlashlight();
 
   // Handle dash state
   if (this.isDashing) {

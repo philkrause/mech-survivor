@@ -25,6 +25,9 @@ export class TfighterSystem {
 
   // Health bars for enemies
   private healthBars: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Graphics> = new Map();
+  
+  // Enemy glow lights for lighting system
+  private enemyLights: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Light> = new Map();
 
   // Buffer to avoid allocations in update loop
   private vectorBuffer = { x: 0, y: 0 };
@@ -232,6 +235,11 @@ export class TfighterSystem {
     enemy.setDepth(50);
     enemy.setVisible(true);
 
+    // Enable lighting on enemy sprite (only if lights are available)
+    if (this.scene.lights) {
+      enemy.setPipeline('Light2D');
+    }
+
     if (enemy.body)
       enemy.body.enable = true;// Activate the physics body
 
@@ -292,6 +300,71 @@ export class TfighterSystem {
     // Set enemy type for identification
     (enemy as any).enemyType = type;
 
+    // Create glowing light for enemy
+    this.createEnemyGlow(enemy);
+
+  }
+
+  /**
+   * Create a glowing light for an enemy
+   */
+  private createEnemyGlow(enemy: Phaser.Physics.Arcade.Sprite): void {
+    // Skip if enemy already has a light
+    if (this.enemyLights.has(enemy)) {
+      return;
+    }
+
+    // Check if lights plugin is available - if not, schedule retry
+    if (!this.scene.lights) {
+      this.scene.time.delayedCall(100, () => {
+        if (enemy.active && !this.enemyLights.has(enemy)) {
+          this.createEnemyGlow(enemy);
+        }
+      });
+      return;
+    }
+
+    // Remove existing light if it exists
+    const existingLight = this.enemyLights.get(enemy);
+    if (existingLight) {
+      this.scene.lights.removeLight(existingLight);
+      this.enemyLights.delete(enemy);
+    }
+
+    // Create a point light on the enemy with a red glow
+    try {
+      const light = this.scene.lights.addLight(enemy.x, enemy.y, 120);
+      if (!light) {
+        this.scene.time.delayedCall(50, () => {
+          if (enemy.active && !this.enemyLights.has(enemy)) {
+            this.createEnemyGlow(enemy);
+          }
+        });
+        return;
+      }
+      
+      light.setColor(0xff0000); // Red glow
+      light.setIntensity(1.5); // Match other systems
+      
+      this.enemyLights.set(enemy, light);
+    } catch (error) {
+      this.scene.time.delayedCall(50, () => {
+        if (enemy.active && !this.enemyLights.has(enemy)) {
+          this.createEnemyGlow(enemy);
+        }
+      });
+    }
+  }
+
+  /**
+   * Update enemy glow light position
+   */
+  private updateEnemyGlow(enemy: Phaser.Physics.Arcade.Sprite): void {
+    const light = this.enemyLights.get(enemy);
+    if (light && enemy.active) {
+      light.x = enemy.x;
+      light.y = enemy.y;
+    }
   }
 
 
@@ -311,6 +384,13 @@ export class TfighterSystem {
     const healthBar = this.healthBars.get(enemy);
     if (healthBar) {
       healthBar.setVisible(false);
+    }
+
+    // Remove enemy glow light
+    const light = this.enemyLights.get(enemy);
+    if (light && this.scene.lights) {
+      this.scene.lights.removeLight(light);
+      this.enemyLights.delete(enemy);
     }
 
     this.activeEnemies.delete(enemy);
@@ -650,6 +730,16 @@ export class TfighterSystem {
 
         // Update health bar position (health bar is now drawn with absolute coordinates in updateHealthBar)
         this.updateHealthBar(enemy);
+        
+        // Ensure enemy has a glow light (safety check - should already be created at spawn)
+        if (!this.enemyLights.has(enemy) && this.scene.lights && enemy.active) {
+          this.createEnemyGlow(enemy);
+        }
+        
+        // Always update light position if it exists
+        if (this.enemyLights.has(enemy)) {
+          this.updateEnemyGlow(enemy);
+        }
       } else {
         // Optionally apply simplified physics for off-screen enemies
         this.moveOffscreenEnemyBasic(enemy);
@@ -706,6 +796,16 @@ export class TfighterSystem {
       healthBar.destroy();
     }
     this.healthBars.clear();
+    
+    // Clean up enemy glow lights
+    if (this.scene.lights) {
+      for (const light of this.enemyLights.values()) {
+        if (light) {
+          this.scene.lights.removeLight(light);
+        }
+      }
+    }
+    this.enemyLights.clear();
   }
 
   /**

@@ -144,6 +144,12 @@ export default class MainScene extends Phaser.Scene {
     }
 
 
+    // Enable lighting system (only if lights plugin is available)
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x333333); // Medium-dark ambient lighting (brighter to see glow better from distance)
+    }
+
     // Create a tileSprite background
     this.background = this.add.tileSprite(
       0,
@@ -155,6 +161,14 @@ export default class MainScene extends Phaser.Scene {
       .setOrigin(0) // Align the background to the top-left corner
       .setScrollFactor(0) // Keep the background static relative to the camera
       .setScale(2); // Scale the background for zoom effect
+      
+    // Enable lighting on background (only if lights are available)
+    if (this.lights) {
+      this.background.setPipeline('Light2D');
+    }
+    
+    // Darken the background for lighting effect
+    this.background.setTint(0x333333); // Darken background
 
 
     // Initialize global volume to 50% by default

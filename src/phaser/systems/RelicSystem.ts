@@ -30,7 +30,7 @@ export class RelicSystem {
   private currentInstruction: Phaser.GameObjects.Text | null = null;
   private lightRays: Phaser.GameObjects.Graphics[] = [];
   private chestGlow: Phaser.GameObjects.Graphics | null = null;
-  private chestParticles: Phaser.GameObjects.Particles.ParticleEmitterManager | null = null;
+  private chestParticles: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
   constructor(scene: Phaser.Scene, player: Player, _gameUI: GameUI, upgradeSystem: UpgradeSystem) {
     this.scene = scene;
@@ -262,7 +262,7 @@ export class RelicSystem {
     
     // Stop all particle emitters to improve performance during relic screen
     this.scene.children.each((child: any) => {
-      if (child && child.type === 'ParticleEmitterManager') {
+      if (child && child.type === 'ParticleEmitter') {
         child.stop();
       }
     });
@@ -305,7 +305,7 @@ export class RelicSystem {
       ease: 'Sine.easeInOut',
       onUpdate: () => {
         // Update light rays and glow position as chest pulses
-        this.updateLightRaysPosition(chestSprite.x, chestSprite.y, chestSprite.scale);
+        this.updateLightRaysPosition(chestSprite.x, chestSprite.y);
         if (this.chestGlow) {
           this.chestGlow.clear();
           this.updateChestGlow(chestSprite.x, chestSprite.y, chestSprite.scale, this.chestGlow.alpha);
@@ -338,7 +338,7 @@ export class RelicSystem {
     });
 
     // Create light rays emanating from chest to top of screen
-    this.createLightRays(chestSprite.x, chestSprite.y, chestSprite.scale);
+    this.createLightRays(chestSprite.x, chestSprite.y);
 
     // Create golden particle effect around chest
     this.chestParticles = this.scene.add.particles(chestSprite.x, chestSprite.y, 'spark', {
@@ -349,7 +349,7 @@ export class RelicSystem {
       tint: 0xffd700, // Gold
       alpha: { start: 0.8, end: 0 },
       blendMode: Phaser.BlendModes.ADD,
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 30 * chestSprite.scale) }
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 30 * chestSprite.scale) } as Phaser.Types.GameObjects.Particles.EmitZoneObject
     });
     this.chestParticles.setDepth(3003).setScrollFactor(0);
 
@@ -562,7 +562,7 @@ export class RelicSystem {
   /**
    * Create light rays emanating from chest to top of screen
    */
-  private createLightRays(chestX: number, chestY: number, chestScale: number): void {
+  private createLightRays(chestX: number, chestY: number): void {
     const screenHeight = this.scene.cameras.main.height;
     const rayCount = 8; // Number of light rays
     const rayWidth = 3; // Width of each ray
@@ -640,7 +640,7 @@ export class RelicSystem {
   /**
    * Update light rays position (called when chest pulses)
    */
-  private updateLightRaysPosition(chestX: number, chestY: number, chestScale: number): void {
+  private updateLightRaysPosition(chestX: number, chestY: number): void {
     this.lightRays.forEach((ray, index) => {
       const screenHeight = this.scene.cameras.main.height;
       const rayWidth = 3;

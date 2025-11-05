@@ -27,6 +27,9 @@ export class AtEnemySystem {
   // Health bars for enemies
   private healthBars: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Graphics> = new Map();
   private healthBarsEnabled: boolean = true;
+  
+  // Enemy glow lights for lighting system
+  private enemyLights: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Light> = new Map();
 
 
   // AT-specific properties
@@ -280,6 +283,11 @@ export class AtEnemySystem {
     enemy.setPosition(spawnZone.x, spawnZone.y);
     enemy.setScale(this.scale);
     
+    // Enable lighting on enemy sprite (only if lights are available)
+    if (this.scene.lights) {
+      enemy.setPipeline('Light2D');
+    }
+    
     // Set up physics body - narrower width, same height
     if (enemy.body) {
       enemy.body.setSize(enemy.width * 0.5, enemy.height * 0.8); // 50% width, 80% height
@@ -317,6 +325,71 @@ export class AtEnemySystem {
       this.createHealthBar(enemy);
     }
 
+    // Create glowing light for enemy
+    this.createEnemyGlow(enemy);
+
+  }
+
+  /**
+   * Create a glowing light for an enemy
+   */
+  private createEnemyGlow(enemy: Phaser.Physics.Arcade.Sprite): void {
+    // Skip if enemy already has a light
+    if (this.enemyLights.has(enemy)) {
+      return;
+    }
+
+    // Check if lights plugin is available - if not, schedule retry
+    if (!this.scene.lights) {
+      this.scene.time.delayedCall(100, () => {
+        if (enemy.active && !this.enemyLights.has(enemy)) {
+          this.createEnemyGlow(enemy);
+        }
+      });
+      return;
+    }
+
+    // Remove existing light if it exists
+    const existingLight = this.enemyLights.get(enemy);
+    if (existingLight) {
+      this.scene.lights.removeLight(existingLight);
+      this.enemyLights.delete(enemy);
+    }
+
+    // Create a point light on the enemy with a red glow
+    try {
+      const light = this.scene.lights.addLight(enemy.x, enemy.y, 120);
+      if (!light) {
+        this.scene.time.delayedCall(50, () => {
+          if (enemy.active && !this.enemyLights.has(enemy)) {
+            this.createEnemyGlow(enemy);
+          }
+        });
+        return;
+      }
+      
+      light.setColor(0xff0000); // Red glow
+      light.setIntensity(1.5); // Match other systems
+      
+      this.enemyLights.set(enemy, light);
+    } catch (error) {
+      this.scene.time.delayedCall(50, () => {
+        if (enemy.active && !this.enemyLights.has(enemy)) {
+          this.createEnemyGlow(enemy);
+        }
+      });
+    }
+  }
+
+  /**
+   * Update enemy glow light position
+   */
+  private updateEnemyGlow(enemy: Phaser.Physics.Arcade.Sprite): void {
+    const light = this.enemyLights.get(enemy);
+    if (light && enemy.active) {
+      light.x = enemy.x;
+      light.y = enemy.y;
+    }
   }
 
   /**
@@ -457,6 +530,13 @@ export class AtEnemySystem {
     if (healthBar) {
       healthBar.destroy();
       this.healthBars.delete(enemy);
+    }
+    
+    // Remove enemy glow light
+    const light = this.enemyLights.get(enemy);
+    if (light && this.scene.lights) {
+      this.scene.lights.removeLight(light);
+      this.enemyLights.delete(enemy);
     }
     
     // Remove from offscreen timers
@@ -606,6 +686,15 @@ export class AtEnemySystem {
     if (this.healthBarsEnabled) {
       this.updateHealthBar(enemy);
     }
+    
+    // Ensure enemy has a glow light (safety check for edge cases)
+    if (!this.enemyLights.has(enemy) && this.scene.lights) {
+      console.warn('[AtEnemySystem] update: enemy missing glow light, creating now');
+      this.createEnemyGlow(enemy);
+    }
+    
+    // Update enemy glow light position
+    this.updateEnemyGlow(enemy);
   }
 
   /**
@@ -844,6 +933,16 @@ export class AtEnemySystem {
     // Destroy health bars
     this.healthBars.forEach(healthBar => healthBar.destroy());
     this.healthBars.clear();
+    
+    // Clean up enemy glow lights
+    if (this.scene.lights) {
+      for (const light of this.enemyLights.values()) {
+        if (light) {
+          this.scene.lights.removeLight(light);
+        }
+      }
+    }
+    this.enemyLights.clear();
     
     // Clear active enemies
     this.activeEnemies.clear();
