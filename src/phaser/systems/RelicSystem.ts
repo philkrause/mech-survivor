@@ -349,7 +349,7 @@ export class RelicSystem {
       tint: 0xffd700, // Gold
       alpha: { start: 0.8, end: 0 },
       blendMode: Phaser.BlendModes.ADD,
-      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 30 * chestSprite.scale) } as Phaser.Types.GameObjects.Particles.EmitZoneObject
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 30 * chestSprite.scale) } as unknown as Phaser.Types.GameObjects.Particles.EmitZoneObject
     });
     this.chestParticles.setDepth(3003).setScrollFactor(0);
 
