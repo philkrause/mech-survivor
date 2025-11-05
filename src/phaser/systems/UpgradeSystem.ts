@@ -575,6 +575,8 @@ export class UpgradeSystem {
     // Map upgrade IDs to weapon IDs
     const upgradeToWeaponMap: { [key: string]: string } = {
       'damage': 'blaster',
+      'projectile_speed': 'blaster', // Blaster speed upgrade
+      'projectile_count': 'blaster', // Multi-shot upgrade
       'unlock_flamethrower': 'flamethrower',
       'flamethrower_damage': 'flamethrower',
       'flamethrower_speed': 'flamethrower',
@@ -644,7 +646,7 @@ export class UpgradeSystem {
   getWeaponLevel(weaponId: string): number {
     // Map weapon IDs to their related upgrade IDs
     const weaponUpgradeMap: { [key: string]: string[] } = {
-      'damage': ['damage'], // Blaster
+      'damage': ['damage', 'projectile_speed', 'projectile_count'], // Blaster - includes all blaster upgrades
       'unlock_flamethrower': ['unlock_flamethrower', 'flamethrower_damage', 'flamethrower_speed'],
       'unlock_force': ['unlock_force', 'force_damage', 'force_speed'],
       'unlock_combat_drone': ['unlock_combat_drone', 'combat_drone_damage', 'combat_drone_speed'],

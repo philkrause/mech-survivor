@@ -214,9 +214,11 @@ export class CombatDroneSystem {
     this.isReturning = false;
     this.hitEnemiesThisRoll = new WeakSet();
     
-    // Play combat drone sound when roll starts (not on hit)
-    // Phaser multiplies config volume by global volume automatically
-    this.scene.sound.play('combat_drone', { volume: GAME_CONFIG.SOUNDS.COMBAT_DRONE });
+    // Play combat drone sound when roll starts (not on hit) - only if window is focused
+    if ((this.scene as any).shouldPlaySounds && (this.scene as any).shouldPlaySounds()) {
+      // Phaser multiplies config volume by global volume automatically
+      this.scene.sound.play('combat_drone', { volume: GAME_CONFIG.SOUNDS.COMBAT_DRONE });
+    }
 
     // Find nearest enemy or roll in player's facing direction
     const nearestEnemy = this.findNearestEnemy(startX, startY);

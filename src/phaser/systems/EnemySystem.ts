@@ -931,6 +931,12 @@ export class EnemySystem {
     if (!healthBar) {
       // Create new health bar
       healthBar = this.scene.add.graphics();
+      // Set position to enemy position initially
+      healthBar.setPosition(enemy.x, enemy.y);
+      // Make sure it's visible
+      healthBar.setVisible(true);
+      // Set depth so it renders above enemies
+      healthBar.setDepth(GAME_CONFIG.ENEMY.DEPTH + 1);
       this.healthBars.set(enemy, healthBar);
     }
 
@@ -946,7 +952,7 @@ export class EnemySystem {
    */
   public updateHealthBar(enemy: Phaser.Physics.Arcade.Sprite): void {
     const healthBar = this.healthBars.get(enemy);
-    if (!healthBar) return;
+    if (!healthBar || !enemy.active) return;
 
     // Clear previous graphics
     healthBar.clear();
@@ -1001,8 +1007,9 @@ export class EnemySystem {
       healthBar.fillRect(-width / 2, yOffset, width * healthPercent, height);
     }
 
-    // Set depth to ensure it renders above the enemy
-    healthBar.setDepth(GAME_CONFIG.ENEMY.DEPTH + 1);
+    // Draw border
+    healthBar.lineStyle(1, 0xffffff, 1);
+    healthBar.strokeRect(-width / 2, yOffset, width, height);
   }
 
   /**

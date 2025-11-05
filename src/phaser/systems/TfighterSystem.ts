@@ -565,7 +565,7 @@ export class TfighterSystem {
 
     const camera = this.scene.cameras.main;
     const x = enemy.x - camera.scrollX - 15;
-    const y = enemy.y - camera.scrollY - 30;
+    const y = enemy.y - camera.scrollY - 45; // Higher above sprite (increased from -30 to -45)
     
     // Clear previous graphics
     healthBar.clear();

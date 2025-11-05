@@ -28,6 +28,9 @@ export class RelicSystem {
   private currentTitle: Phaser.GameObjects.Text | null = null;
   private currentChestSprite: Phaser.GameObjects.Sprite | null = null;
   private currentInstruction: Phaser.GameObjects.Text | null = null;
+  private lightRays: Phaser.GameObjects.Graphics[] = [];
+  private chestGlow: Phaser.GameObjects.Graphics | null = null;
+  private chestParticles: Phaser.GameObjects.Particles.ParticleEmitterManager | null = null;
 
   constructor(scene: Phaser.Scene, player: Player, _gameUI: GameUI, upgradeSystem: UpgradeSystem) {
     this.scene = scene;
@@ -287,10 +290,68 @@ export class RelicSystem {
       strokeThickness: 4
     }).setOrigin(0.5).setDepth(3001).setScrollFactor(0);
 
-    // Create chest a bit higher so it doesn't cover the text below
+    // Create large chest - make it much bigger and more prominent
     const chestSprite = this.scene.add.sprite(centerX, centerY + 140, 'chest_open');
-    chestSprite.setScale(2);
+    chestSprite.setScale(4); // Increased from 2 to 4 for much larger chest
     chestSprite.setDepth(3002).setScrollFactor(0);
+
+    // Add pulsing animation to chest
+    this.scene.tweens.add({
+      targets: chestSprite,
+      scale: 4.2,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        // Update light rays and glow position as chest pulses
+        this.updateLightRaysPosition(chestSprite.x, chestSprite.y, chestSprite.scale);
+        if (this.chestGlow) {
+          this.chestGlow.clear();
+          this.updateChestGlow(chestSprite.x, chestSprite.y, chestSprite.scale, this.chestGlow.alpha);
+        }
+        if (this.chestParticles) {
+          this.chestParticles.setPosition(chestSprite.x, chestSprite.y);
+        }
+      }
+    });
+
+    // Create glowing aura around chest
+    this.chestGlow = this.scene.add.graphics();
+    this.chestGlow.setDepth(3001).setScrollFactor(0);
+    this.updateChestGlow(chestSprite.x, chestSprite.y, chestSprite.scale);
+
+    // Animate the glow
+    this.scene.tweens.add({
+      targets: this.chestGlow,
+      alpha: { from: 0.6, to: 1.0 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        if (this.chestGlow && this.currentChestSprite) {
+          this.chestGlow.clear();
+          this.updateChestGlow(this.currentChestSprite.x, this.currentChestSprite.y, this.currentChestSprite.scale, this.chestGlow.alpha);
+        }
+      }
+    });
+
+    // Create light rays emanating from chest to top of screen
+    this.createLightRays(chestSprite.x, chestSprite.y, chestSprite.scale);
+
+    // Create golden particle effect around chest
+    this.chestParticles = this.scene.add.particles(chestSprite.x, chestSprite.y, 'spark', {
+      speed: { min: 20, max: 40 },
+      scale: { start: 0.8, end: 0 },
+      quantity: 3,
+      lifespan: 2000,
+      tint: 0xffd700, // Gold
+      alpha: { start: 0.8, end: 0 },
+      blendMode: Phaser.BlendModes.ADD,
+      emitZone: { type: 'edge', source: new Phaser.Geom.Circle(0, 0, 30 * chestSprite.scale) }
+    });
+    this.chestParticles.setDepth(3003).setScrollFactor(0);
 
     // Start Baby Yoda fountain loop from chest
     this.startYodaFountainLoop(chestSprite.x, chestSprite.y - 20);
@@ -319,6 +380,16 @@ export class RelicSystem {
     this.currentTitle = title;
     this.currentChestSprite = chestSprite;
     this.currentInstruction = instruction;
+
+    // Add title pulsing animation
+    this.scene.tweens.add({
+      targets: title,
+      scale: 1.1,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
 
     // Check if in stress test mode - skip animation for faster testing
     if (this.isStressTestMode) {
@@ -489,6 +560,127 @@ export class RelicSystem {
   }
 
   /**
+   * Create light rays emanating from chest to top of screen
+   */
+  private createLightRays(chestX: number, chestY: number, chestScale: number): void {
+    const screenHeight = this.scene.cameras.main.height;
+    const rayCount = 8; // Number of light rays
+    const rayWidth = 3; // Width of each ray
+    const spreadAngle = Math.PI * 0.3; // 30 degrees spread (15 degrees on each side)
+    
+    // Clear any existing rays
+    this.lightRays.forEach(ray => ray.destroy());
+    this.lightRays = [];
+    
+    for (let i = 0; i < rayCount; i++) {
+      // Calculate angle for this ray (spread from center)
+      const angle = (i / (rayCount - 1) - 0.5) * spreadAngle - Math.PI / 2; // Point upward with spread
+      
+      // Calculate end point (top of screen)
+      const rayLength = screenHeight - chestY;
+      const endX = chestX + Math.sin(angle) * rayLength * 0.5; // Narrower spread
+      const endY = 0; // Top of screen
+      
+      // Create ray graphic
+      const ray = this.scene.add.graphics();
+      ray.setDepth(3002).setScrollFactor(0);
+      
+      // Draw ray with gradient effect (bright at chest, fading upward)
+      this.drawLightRay(ray, chestX, chestY, endX, endY, rayWidth, i);
+      
+      // Animate ray (pulsing/flickering)
+      const baseAlpha = 0.6 + Math.random() * 0.2; // Random base alpha between 0.6-0.8
+      this.scene.tweens.add({
+        targets: ray,
+        alpha: { from: baseAlpha, to: 1.0 },
+        duration: 800 + Math.random() * 400, // Random duration for flickering effect
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        onUpdate: () => {
+          ray.clear();
+          this.drawLightRay(ray, chestX, chestY, endX, endY, rayWidth, i, ray.alpha);
+        }
+      });
+      
+      this.lightRays.push(ray);
+    }
+  }
+
+  /**
+   * Draw a single light ray with gradient effect
+   */
+  private drawLightRay(ray: Phaser.GameObjects.Graphics, startX: number, startY: number, endX: number, endY: number, width: number, index: number, alpha: number = 1.0): void {
+    // Use gold/yellow color with varying intensity
+    const baseColor = 0xffd700; // Gold
+    const intensity = 0.7 + (index % 3) * 0.1; // Vary intensity between rays
+    
+    // Draw outer glow (softer, wider)
+    ray.lineStyle(width * 3, baseColor, alpha * intensity * 0.2);
+    ray.beginPath();
+    ray.moveTo(startX, startY);
+    ray.lineTo(endX, endY);
+    ray.strokePath();
+    
+    // Draw main ray (bright, thin)
+    ray.lineStyle(width, baseColor, alpha * intensity);
+    ray.beginPath();
+    ray.moveTo(startX, startY);
+    ray.lineTo(endX, endY);
+    ray.strokePath();
+    
+    // Draw inner bright core
+    ray.lineStyle(width * 0.5, 0xffff00, alpha * intensity * 1.2);
+    ray.beginPath();
+    ray.moveTo(startX, startY);
+    ray.lineTo(endX, endY);
+    ray.strokePath();
+  }
+
+  /**
+   * Update light rays position (called when chest pulses)
+   */
+  private updateLightRaysPosition(chestX: number, chestY: number, chestScale: number): void {
+    this.lightRays.forEach((ray, index) => {
+      const screenHeight = this.scene.cameras.main.height;
+      const rayWidth = 3;
+      const spreadAngle = Math.PI * 0.3;
+      const angle = (index / (this.lightRays.length - 1) - 0.5) * spreadAngle - Math.PI / 2;
+      const rayLength = screenHeight - chestY;
+      const endX = chestX + Math.sin(angle) * rayLength * 0.5;
+      const endY = 0;
+      
+      ray.clear();
+      this.drawLightRay(ray, chestX, chestY, endX, endY, rayWidth, index, ray.alpha);
+    });
+  }
+
+  /**
+   * Create/update glowing aura around chest
+   */
+  private updateChestGlow(chestX: number, chestY: number, chestScale: number, alpha: number = 0.8): void {
+    if (!this.chestGlow) return;
+    
+    this.chestGlow.clear();
+    
+    const radius = 50 * chestScale; // Glow radius based on chest size
+    const glowColor = 0xffd700; // Gold
+    
+    // Draw multiple concentric circles for glow effect
+    for (let i = 0; i < 3; i++) {
+      const currentRadius = radius * (1 + i * 0.3);
+      const currentAlpha = alpha * (0.4 - i * 0.1);
+      
+      this.chestGlow.lineStyle(2, glowColor, currentAlpha);
+      this.chestGlow.strokeCircle(chestX, chestY, currentRadius);
+      
+      // Fill with soft glow
+      this.chestGlow.fillStyle(glowColor, currentAlpha * 0.2);
+      this.chestGlow.fillCircle(chestX, chestY, currentRadius);
+    }
+  }
+
+  /**
    * Public method to force close relic screen (used when level-up UI opens)
    */
   public forceCloseRelicScreen(): void {
@@ -532,6 +724,22 @@ export class RelicSystem {
         glow.destroy();
       }
       this.currentRelicDisplay.destroy();
+    }
+    
+    // Clean up light rays
+    this.lightRays.forEach(ray => ray.destroy());
+    this.lightRays = [];
+    
+    // Clean up chest glow
+    if (this.chestGlow) {
+      this.chestGlow.destroy();
+      this.chestGlow = null;
+    }
+    
+    // Clean up chest particles
+    if (this.chestParticles) {
+      this.chestParticles.destroy();
+      this.chestParticles = null;
     }
     
     this.stopYodaFountain();
@@ -606,6 +814,22 @@ export class RelicSystem {
     const glow = relicDisplay.getData('glow');
     if (glow) {
       glow.destroy();
+    }
+    
+    // Clean up light rays
+    this.lightRays.forEach(ray => ray.destroy());
+    this.lightRays = [];
+    
+    // Clean up chest glow
+    if (this.chestGlow) {
+      this.chestGlow.destroy();
+      this.chestGlow = null;
+    }
+    
+    // Clean up chest particles
+    if (this.chestParticles) {
+      this.chestParticles.destroy();
+      this.chestParticles = null;
     }
     
     relicDisplay.destroy();

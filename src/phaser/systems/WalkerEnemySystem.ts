@@ -728,25 +728,27 @@ export class WalkerEnemySystem {
     this.scene.time.delayedCall(this.aimingDuration, () => {
       if (laserLine.active) {
         laserLine.isFiring = true; // Switch to firing phase (blue line)
-        // Play walker laser sound when firing phase starts
-        // Skip first 1 second of audio and use lower volume
-        const sound = this.scene.sound.play('laser_cannon2', { volume: GAME_CONFIG.SOUNDS.LASER_CANNON2 });
-        // Try to seek to 1 second to skip the beginning
-        if (sound && typeof sound === 'object' && sound !== null) {
-          const webAudioSound = sound as Phaser.Sound.WebAudioSound;
-          // Use a small delay to ensure sound has started, then seek
-          this.scene.time.delayedCall(10, () => {
-            if (webAudioSound && webAudioSound.isPlaying) {
-              try {
-                // Try to set seek property directly
-                if (typeof (webAudioSound as any).seek !== 'undefined') {
-                  (webAudioSound as any).seek = 1.0; // Skip first 1 second
+        // Play walker laser sound when firing phase starts - only if window is focused
+        if ((this.scene as any).shouldPlaySounds && (this.scene as any).shouldPlaySounds()) {
+          // Skip first 1 second of audio and use lower volume
+          const sound = this.scene.sound.play('laser_cannon2', { volume: GAME_CONFIG.SOUNDS.LASER_CANNON2 });
+          // Try to seek to 1 second to skip the beginning
+          if (sound && typeof sound === 'object' && sound !== null) {
+            const webAudioSound = sound as Phaser.Sound.WebAudioSound;
+            // Use a small delay to ensure sound has started, then seek
+            this.scene.time.delayedCall(10, () => {
+              if (webAudioSound && webAudioSound.isPlaying) {
+                try {
+                  // Try to set seek property directly
+                  if (typeof (webAudioSound as any).seek !== 'undefined') {
+                    (webAudioSound as any).seek = 1.0; // Skip first 1 second
+                  }
+                } catch (e) {
+                  // If seek fails, sound will play from start (acceptable fallback)
                 }
-              } catch (e) {
-                // If seek fails, sound will play from start (acceptable fallback)
               }
-            }
-          });
+            });
+          }
         }
         // Now check for player collision and start damage timer
         this.checkPlayerLaserCollision(laserLine);

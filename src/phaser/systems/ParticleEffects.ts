@@ -117,9 +117,12 @@ export class ParticleEffects {
     // Enhanced screen shake for more impact
     this.scene.cameras.main.shake(80, 0.02);
     
-    // Play explosion sound at maximum volume
-    // Phaser multiplies config volume by global volume automatically
-    this.scene.sound.play('explosion', { volume: GAME_CONFIG.SOUNDS.EXPLOSION });
+    // Play explosion sound only if window is focused and enough time has passed since regaining focus
+    // This prevents loud explosion sounds when alt-tabbing back into the game
+    if ((this.scene as any).shouldPlaySounds && (this.scene as any).shouldPlaySounds()) {
+      // Phaser multiplies config volume by global volume automatically
+      this.scene.sound.play('explosion', { volume: GAME_CONFIG.SOUNDS.EXPLOSION });
+    }
     
     // Destroy sprite and particles when animation completes
     explosionSprite.on('animationcomplete', () => {

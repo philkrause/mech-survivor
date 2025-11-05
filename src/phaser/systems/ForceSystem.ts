@@ -187,11 +187,14 @@ export class ForceSystem {
 
     // Safely get player position - return early if unavailable
     try {
-      const playerPos = this.player.getPosition();
-      if (!playerPos || playerPos.x === undefined || playerPos.y === undefined) {
+      const playerSprite = this.player.getSprite();
+      if (!playerSprite) {
         return;
       }
-      const { x, y } = playerPos;
+      // Use sprite center position directly for accurate centering
+      const center = playerSprite.getCenter();
+      const x = center.x;
+      const y = center.y;
       const baseRadius = this.indicatorRadius;
       const forceColor = this.forceConfig.color!;
 
@@ -320,13 +323,17 @@ export class ForceSystem {
       return;
     }
 
-    // Update circle positions to follow player
-    const { x, y } = this.player.getPosition();
-    this.indicatorCircles.forEach(circle => {
-      if (circle && circle.active) {
-        circle.setPosition(x, y);
-      }
-    });
+    // Update circle positions to follow player - use sprite center directly for accuracy
+    const playerSprite = this.player.getSprite();
+    if (playerSprite) {
+      // Use sprite center position directly (sprite.x and sprite.y are the center if origin is 0.5, 0.5)
+      const center = playerSprite.getCenter();
+      this.indicatorCircles.forEach(circle => {
+        if (circle && circle.active) {
+          circle.setPosition(center.x, center.y);
+        }
+      });
+    }
   }
 
   private createVisualEffect(x: number, y: number, config: ForcePoolConfig): void {

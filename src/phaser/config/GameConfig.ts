@@ -246,11 +246,11 @@ export const GAME_CONFIG = {
   SOUNDS: {
     // Volume settings for all sound effects (0-1)
     // Phaser automatically multiplies these by global volume
-    BLASTER: 0.1,
+    BLASTER: 0.3,
     COMBAT_DRONE: 0.6,
     LASER_CANNON: 0.25,
     LASER_CANNON2: 0.25, // Walker enemy laser
-    EXPLOSION: 1.0,
+    EXPLOSION: .6,
     FLAMETHROWER: 0.5,
     RELIC_PICKUP: 0.4,
     PLAYER_DEATH: 0.5,

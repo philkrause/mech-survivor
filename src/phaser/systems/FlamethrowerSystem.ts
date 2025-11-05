@@ -122,9 +122,11 @@ export class FlamethrowerSystem {
     const { x, y, facingLeft } = getPlayerData();
     const angle = facingLeft ? Math.PI : 0;
     this.slash(x, y, angle, onHit, getPlayerData);
-    // Play flamethrower sound
-    // Phaser multiplies config volume by global volume automatically
-    this.scene.sound.play('flamethrower', { volume: GAME_CONFIG.SOUNDS.FLAMETHROWER });
+    // Play flamethrower sound only if window is focused
+    if ((this.scene as any).shouldPlaySounds && (this.scene as any).shouldPlaySounds()) {
+      // Phaser multiplies config volume by global volume automatically
+      this.scene.sound.play('flamethrower', { volume: GAME_CONFIG.SOUNDS.FLAMETHROWER });
+    }
 
     // Then set up repeating timer
     this.slashTimer = this.scene.time.addEvent({
@@ -134,9 +136,11 @@ export class FlamethrowerSystem {
         const { x, y, facingLeft } = getPlayerData();
         const angle = facingLeft ? Math.PI : 0;
         this.slash(x, y, angle, onHit, getPlayerData);
-        // Play flamethrower sound
-        // Phaser multiplies config volume by global volume automatically
-        this.scene.sound.play('flamethrower', { volume: GAME_CONFIG.SOUNDS.FLAMETHROWER });
+        // Play flamethrower sound only if window is focused
+        if ((this.scene as any).shouldPlaySounds && (this.scene as any).shouldPlaySounds()) {
+          // Phaser multiplies config volume by global volume automatically
+          this.scene.sound.play('flamethrower', { volume: GAME_CONFIG.SOUNDS.FLAMETHROWER });
+        }
       }
     });
   }

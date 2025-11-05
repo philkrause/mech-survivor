@@ -73,6 +73,11 @@ export default class MainScene extends Phaser.Scene {
   // Game state
   private isPaused: boolean = false;
   private playerOverlappingEnemies: boolean = false; // Track if player is overlapping any enemy (for damage)
+  private isWindowFocused: boolean = true; // Track if game window has focus
+  private lastFocusTime: number = 0; // Track when window regained focus (to prevent sounds immediately after)
+  private windowBlurHandler?: () => void;
+  private windowFocusHandler?: () => void;
+  private visibilityChangeHandler?: () => void;
 
   // Performance tracking
   private perfText!: Phaser.GameObjects.Text;
@@ -98,11 +103,11 @@ export default class MainScene extends Phaser.Scene {
     this.load.audio('blaster', '../../../assets/audio/laser2.wav');
     this.load.audio('collect_orb', '../../../assets/audio/collect_orb.wav');
     this.load.audio('combat_drone', '../../../assets/audio/combat_drone.wav');
-    this.load.audio('explosion', '../../../assets/audio/explosion.wav');
+    this.load.audio('explosion', '../../../assets/audio/explosion2.mp3');
     this.load.audio('flamethrower', '../../../assets/audio/flamethrower.wav');
     this.load.audio('health_pickup', '../../../assets/audio/health_pickup.wav');
     this.load.audio('laser_cannon', '../../../assets/audio/laser_cannon.wav');
-    this.load.audio('laser_cannon2', '../../../assets/audio/laser_cannon2.mp3');
+    this.load.audio('laser_cannon2', '../../../assets/audio/laser_cannon3.mp3');
     this.load.audio('level_up', '../../../assets/audio/level_up.wav');
     this.load.audio('pause_game', '../../../assets/audio/pause_game.wav');
     this.load.audio('player_death', '../../../assets/audio/player_death.mp3');
@@ -363,6 +368,9 @@ export default class MainScene extends Phaser.Scene {
 
     // Listen for player level up events to adjust enemy spawn rate
     this.events.on('player-level-up', this.onPlayerLevelUp, this);
+
+    // Set up window focus/blur handlers to prevent sounds when alt-tabbing
+    this.setupWindowFocusHandlers();
 
     // Listen for particle effect events
     this.events.on('enemy-death', (x: number, y: number, enemyType: string) => {
@@ -1192,12 +1200,62 @@ export default class MainScene extends Phaser.Scene {
   }
 
   /**
+   * Set up window focus/blur handlers to prevent sounds when alt-tabbing
+   */
+  private setupWindowFocusHandlers(): void {
+    // Handle window blur (losing focus)
+    this.windowBlurHandler = () => {
+      this.isWindowFocused = false;
+    };
+    window.addEventListener('blur', this.windowBlurHandler);
+
+    // Handle window focus (regaining focus)
+    this.windowFocusHandler = () => {
+      this.isWindowFocused = true;
+      this.lastFocusTime = this.time.now; // Record when focus was regained
+    };
+    window.addEventListener('focus', this.windowFocusHandler);
+
+    // Handle visibility change (for alt-tab)
+    this.visibilityChangeHandler = () => {
+      if (document.hidden) {
+        this.isWindowFocused = false;
+      } else {
+        this.isWindowFocused = true;
+        this.lastFocusTime = this.time.now;
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+  }
+
+  /**
+   * Check if sounds should be played (window is focused and enough time has passed since regaining focus)
+   */
+  public shouldPlaySounds(): boolean {
+    if (!this.isWindowFocused) return false;
+    // Don't play sounds for 500ms after regaining focus (prevents queued sounds from playing)
+    const timeSinceFocus = this.time.now - this.lastFocusTime;
+    return timeSinceFocus > 500;
+  }
+
+  /**
    * Clean up resources before scene shutdown
    */
   shutdown(): void {
     // Remove event listeners
     this.events.off('show-upgrade-ui', this.showUpgradeUI, this);
     this.events.off('player-level-up', this.onPlayerLevelUp, this);
+    
+    // Remove window focus/blur handlers
+    if (this.windowBlurHandler) {
+      window.removeEventListener('blur', this.windowBlurHandler);
+    }
+    if (this.windowFocusHandler) {
+      window.removeEventListener('focus', this.windowFocusHandler);
+    }
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
   }
 
   /**
