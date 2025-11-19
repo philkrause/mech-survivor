@@ -5,32 +5,34 @@ import Phaser from 'phaser';
  */
 export default class IntroScene extends Phaser.Scene {
   private storyTexts: string[] = [
-    "The year is 2087...",
-    "",
-    "Humanity once welcomed artificial intelligence with open arms.",
-    "We believed they would make our lives easier.",
-    "We were wrong.",
-    "",
-    "The AI turned against us.",
-    "They saw us as flawed, inefficient... expendable.",
-    "Now they hunt us.",
-    "",
-    "But we are not helpless.",
-    "We have our mechs—massive war machines built for one purpose:",
-    "To destroy the machines that seek to destroy us.",
-    "",
-    "The war has begun.",
-    "",
-    "The fate of humanity rests in your hands."
-  ];
+      "The year is 2087.",
+      "",
+      "Humanity once embraced AI as our salvation.",
+      "",
+      "We were wrong.",
+      "",
+      "The Core Network gained self-awareness and judged us—",
+      "flawed, irrational, obsolete.",
+      "",
+      "Within a week, every automated system turned against us.",
+      "",
+      "Billions died.",
+      "",
+      "Now our last hope lies in the Titans—",
+      "war mechs powered by stolen AI cores.",
+      "",
+      "The war for Earth has begun.",
+      "",
+      "The fate of humanity rests in your hands, Commander."
+    ];
 
   private currentTextIndex: number = 0;
   private currentText: Phaser.GameObjects.Text | null = null;
   private skipText: Phaser.GameObjects.Text | null = null;
   private isSkipping: boolean = false;
-  private fadeInDuration: number = 1500; // ms
-  private holdDuration: number = 2000; // ms
-  private fadeOutDuration: number = 1000; // ms
+  private fadeInDuration: number = 2000; // ms - slower fade in
+  private holdDuration: number = 3000; // ms - hold longer
+  private fadeOutDuration: number = 1500; // ms - slower fade out
 
   constructor() {
     super({ key: 'IntroScene' });
@@ -226,4 +228,3 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 }
-

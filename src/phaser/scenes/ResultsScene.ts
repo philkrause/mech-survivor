@@ -10,6 +10,7 @@ import MainScene from './MainScene';
 export default class ResultsScene extends Phaser.Scene {
   private gameStats!: GameStats;
   private upgradeSystem!: UpgradeSystem;
+  private scanlineGraphics!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: 'ResultsScene' });
@@ -29,26 +30,70 @@ export default class ResultsScene extends Phaser.Scene {
     const centerX = gameWidth / 2;
     const centerY = gameHeight / 2;
 
-    // Background
-    this.add.rectangle(centerX, centerY, gameWidth, gameHeight, 0x1a2332, 1).setDepth(0);
+    // Dark sci-fi background with red tint
+    this.add.rectangle(centerX, centerY, gameWidth, gameHeight, 0x0a0a0f, 1).setDepth(0);
+    
+    // Add red vignette effect
+    const vignette = this.add.graphics();
+    vignette.fillStyle(0x330000, 0.3);
+    vignette.fillRect(0, 0, gameWidth, gameHeight * 0.15); // Top
+    vignette.fillRect(0, gameHeight * 0.85, gameWidth, gameHeight * 0.15); // Bottom
+    vignette.setDepth(1);
+    
+    // Add animated scanlines
+    this.scanlineGraphics = this.add.graphics();
+    this.scanlineGraphics.setDepth(100);
+    this.createScanlines();
+    
+    // Add corner brackets for tech feel
+    this.createCornerBrackets(centerX, centerY, gameWidth, gameHeight);
 
-    // Title - use proportional positioning
-    const titleY = gameHeight * 0.05; // 5% from top
-    this.add.text(centerX, titleY, 'RESULTS', {
-      fontSize: '72px',
-      color: '#ffffff',
+    // Title - dramatic mech-themed with glow
+    const titleY = gameHeight * 0.08; // 8% from top
+    const title = this.add.text(centerX, titleY, '[ MISSION REPORT ]', {
+      fontSize: '64px',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 8,
+      stroke: '#ff0000',
+      strokeThickness: 2,
       align: 'center'
-    }).setOrigin(0.5).setDepth(1);
+    }).setOrigin(0.5).setDepth(101);
+    
+    // Add subtitle
+    this.add.text(centerX, titleY + 40, 'PILOT STATUS: K.I.A.', {
+      fontSize: '24px',
+      color: '#ff3333',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5).setDepth(101);
+    
+    // Pulse effect on title
+    this.tweens.add({
+      targets: title,
+      alpha: 0.7,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
 
-    // Left panel - Game stats - use proportional positioning for mobile
+    // Left panel - Game stats with tech panel
     const leftPanelX = gameWidth * 0.08; // 8% from left edge
-    let currentY = gameHeight * 0.15; // Start at 15% from top
+    let currentY = gameHeight * 0.20; // Start at 20% from top
+    
+    // Draw tech panel background
+    const panelWidth = gameWidth * 0.85;
+    const panelHeight = gameHeight * 0.65;
+    const panelGraphics = this.add.graphics();
+    panelGraphics.fillStyle(0x001a2e, 0.6);
+    panelGraphics.fillRect(leftPanelX - 20, currentY - 30, panelWidth, panelHeight);
+    panelGraphics.lineStyle(2, 0x00ffff, 0.8);
+    panelGraphics.strokeRect(leftPanelX - 20, currentY - 30, panelWidth, panelHeight);
+    panelGraphics.setDepth(2);
 
     // Basic stats - use proportional spacing between labels and values
-    // Values should be right-aligned at a consistent position with adequate spacing
     const valueX = gameWidth * 0.55; // 55% from left (responsive for mobile)
     
     // Calculate responsive font size based on screen width
@@ -56,71 +101,94 @@ export default class ResultsScene extends Phaser.Scene {
     const headingFontSize = Math.max(20, Math.min(24, gameWidth * 0.025)); // Scale between 20-24px
     const rowSpacing = gameHeight * 0.05; // 5% of screen height between rows
 
-    this.add.text(leftPanelX, currentY, 'Survived:', {
+    this.add.text(leftPanelX, currentY, 'TIME SURVIVED:', {
       fontSize: `${baseFontSize}px`,
-      color: '#ffffff'
-    }).setOrigin(0, 0.5);
+      color: '#00ddff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(3);
     
     const survivalMinutes = Math.floor(this.gameStats.survivalTime / 60000);
     const survivalSeconds = Math.floor((this.gameStats.survivalTime % 60000) / 1000);
     this.add.text(valueX, currentY, `${survivalMinutes}:${survivalSeconds.toString().padStart(2, '0')}`, {
       fontSize: `${baseFontSize}px`,
-      color: '#ffff00'
-    }).setOrigin(1, 0.5); // Right-aligned
+      color: '#ffaa00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     currentY += rowSpacing;
 
-    this.add.text(leftPanelX, currentY, 'Level Reached:', {
+    this.add.text(leftPanelX, currentY, 'PILOT LEVEL:', {
       fontSize: `${baseFontSize}px`,
-      color: '#ffffff'
-    }).setOrigin(0, 0.5);
+      color: '#00ddff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(3);
     this.add.text(valueX, currentY, `${this.gameStats.levelReached}`, {
       fontSize: `${baseFontSize}px`,
-      color: '#ffff00'
-    }).setOrigin(1, 0.5); // Right-aligned
+      color: '#ffaa00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     currentY += rowSpacing;
 
-    this.add.text(leftPanelX, currentY, 'Enemies Defeated:', {
+    this.add.text(leftPanelX, currentY, 'HOSTILES ELIMINATED:', {
       fontSize: `${baseFontSize}px`,
-      color: '#ffffff'
-    }).setOrigin(0, 0.5);
+      color: '#00ddff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(3);
     this.add.text(valueX, currentY, `${this.gameStats.enemiesDefeated}`, {
       fontSize: `${baseFontSize}px`,
-      color: '#ffff00'
-    }).setOrigin(1, 0.5); // Right-aligned
+      color: '#ffaa00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     currentY += rowSpacing * 1.5;
 
-    // Weapon stats table header - use proportional column spacing for mobile
+    // Weapon stats table header with separator
     const weaponCol1 = leftPanelX; // Weapon name (left-aligned)
     const weaponCol2 = gameWidth * 0.35; // LV (right-aligned, responsive)
     const weaponCol3 = gameWidth * 0.48; // Damage (right-aligned, responsive)
     const weaponCol4 = gameWidth * 0.62; // Time (right-aligned, responsive)
     const weaponCol5 = gameWidth * 0.75; // DPS (right-aligned, responsive)
     
-    this.add.text(weaponCol1, currentY, 'Weapon', {
+    // Draw separator line
+    const separatorGraphics = this.add.graphics();
+    separatorGraphics.lineStyle(2, 0x00ffff, 0.5);
+    separatorGraphics.lineBetween(leftPanelX, currentY - 10, gameWidth * 0.9, currentY - 10);
+    separatorGraphics.setDepth(3);
+    
+    this.add.text(weaponCol1, currentY, 'WEAPON SYSTEMS', {
       fontSize: `${headingFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0, 0.5).setDepth(3);
     this.add.text(weaponCol2, currentY, 'LV', {
       fontSize: `${headingFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(1, 0.5); // Right-aligned
-    this.add.text(weaponCol3, currentY, 'Damage', {
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
+    this.add.text(weaponCol3, currentY, 'DMG', {
       fontSize: `${headingFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(1, 0.5); // Right-aligned
-    this.add.text(weaponCol4, currentY, 'Time', {
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
+    this.add.text(weaponCol4, currentY, 'TIME', {
       fontSize: `${headingFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(1, 0.5); // Right-aligned
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     this.add.text(weaponCol5, currentY, 'DPS', {
       fontSize: `${headingFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(1, 0.5); // Right-aligned
+    }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     currentY += rowSpacing * 0.75;
 
     // Weapon stats rows
@@ -133,58 +201,72 @@ export default class ResultsScene extends Phaser.Scene {
 
       // Weapon name - use responsive width based on screen size
       const weaponNameMaxWidth = gameWidth * 0.25; // 25% of screen width
-      const weaponNameText = this.add.text(weaponCol1, currentY, weapon.name, {
-        fontSize: `${headingFontSize * 0.85}px`, // Slightly smaller than heading
-        color: '#ffffff',
+      const weaponNameText = this.add.text(weaponCol1, currentY, weapon.name.toUpperCase(), {
+        fontSize: `${headingFontSize * 0.85}px`,
+        color: '#aaaaaa',
+        fontFamily: 'monospace',
         fixedWidth: weaponNameMaxWidth
-      }).setOrigin(0, 0.5);
+      }).setOrigin(0, 0.5).setDepth(3);
       
       // If name is too long, truncate it
       if (weaponNameText.width > weaponNameMaxWidth) {
-        const maxChars = Math.floor(weaponNameMaxWidth / (headingFontSize * 0.85 * 0.6)); // Approximate chars
-        weaponNameText.setText(weapon.name.substring(0, maxChars) + '...');
+        const maxChars = Math.floor(weaponNameMaxWidth / (headingFontSize * 0.85 * 0.6));
+        weaponNameText.setText(weapon.name.substring(0, maxChars).toUpperCase() + '...');
       }
       
       this.add.text(weaponCol2, currentY, weapon.level > 0 ? `${weapon.level}` : '—', {
         fontSize: `${headingFontSize * 0.85}px`,
-        color: '#ffff00'
-      }).setOrigin(1, 0.5); // Right-aligned
+        color: '#ffaa00',
+        fontFamily: 'monospace'
+      }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
       
       this.add.text(weaponCol3, currentY, damageStr, {
         fontSize: `${headingFontSize * 0.85}px`,
-        color: '#ffff00'
-      }).setOrigin(1, 0.5); // Right-aligned
+        color: '#ffaa00',
+        fontFamily: 'monospace'
+      }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
       
       this.add.text(weaponCol4, currentY, timeStr, {
         fontSize: `${headingFontSize * 0.85}px`,
-        color: '#ffff00'
-      }).setOrigin(1, 0.5); // Right-aligned
+        color: '#ffaa00',
+        fontFamily: 'monospace'
+      }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
       
       this.add.text(weaponCol5, currentY, dpsStr, {
         fontSize: `${headingFontSize * 0.85}px`,
-        color: '#ffff00'
-      }).setOrigin(1, 0.5); // Right-aligned
+        color: '#ffaa00',
+        fontFamily: 'monospace'
+      }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
       
       currentY += rowSpacing * 0.5;
     });
 
-    // Right panel - Relics (use proportional positioning for mobile)
-    const rightPanelX = gameWidth * 0.82; // 82% from left (responsive)
-    currentY = gameHeight * 0.15; // Start at 15% from top
+    // Relics section (below weapon stats)
+    currentY += rowSpacing * 0.5; // Add spacing after weapons
+    
+    // Add separator line for relics
+    const relicSeparatorGraphics = this.add.graphics();
+    relicSeparatorGraphics.lineStyle(2, 0x00ffff, 0.5);
+    relicSeparatorGraphics.lineBetween(leftPanelX, currentY, gameWidth * 0.9, currentY);
+    relicSeparatorGraphics.setDepth(3);
 
-    this.add.text(rightPanelX, currentY, 'Relics Found:', {
+    currentY += rowSpacing * 0.8; // Space after separator
+
+    this.add.text(leftPanelX, currentY, 'RELICS ACQUIRED:', {
       fontSize: `${baseFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold'
-    }).setOrigin(0, 0.5);
-    currentY += rowSpacing;
+    }).setOrigin(0, 0.5).setDepth(3);
+    currentY += rowSpacing * 0.8;
 
     // Display relics - get names from upgrade system
     if (this.gameStats.relics.length === 0) {
-      this.add.text(rightPanelX, currentY, 'None', {
+      this.add.text(leftPanelX, currentY, '[ NONE ]', {
         fontSize: `${headingFontSize}px`,
-        color: '#888888'
-      }).setOrigin(0, 0.5);
+        color: '#666666',
+        fontFamily: 'monospace'
+      }).setOrigin(0, 0.5).setDepth(3);
     } else {
       this.gameStats.relics.forEach(relicId => {
         let relicName = relicId;
@@ -194,42 +276,46 @@ export default class ResultsScene extends Phaser.Scene {
             relicName = upgrade.name;
           }
         }
-        this.add.text(rightPanelX, currentY, `• ${relicName}`, {
+        this.add.text(leftPanelX, currentY, `> ${relicName.toUpperCase()}`, {
           fontSize: `${headingFontSize * 0.85}px`,
-          color: '#ffff00'
-        }).setOrigin(0, 0.5);
+          color: '#ffaa00',
+          fontFamily: 'monospace'
+        }).setOrigin(0, 0.5).setDepth(3);
         currentY += rowSpacing * 0.5;
       });
     }
 
-    // Play Again button at bottom - use proportional positioning
-    const buttonY = gameHeight * 0.9; // 90% from top
-    const buttonWidth = Math.min(300, gameWidth * 0.4); // Responsive width, max 300px
-    const buttonHeight = Math.min(60, gameHeight * 0.08); // Responsive height, max 60px
+    // Play Again button at bottom - mech-themed
+    const buttonY = gameHeight * 0.92; // 92% from top
+    const buttonWidth = Math.min(400, gameWidth * 0.5); // Responsive width, max 400px
+    const buttonHeight = Math.min(70, gameHeight * 0.09); // Responsive height, max 70px
     const buttonFontSize = Math.max(24, Math.min(36, gameWidth * 0.035)); // Responsive font size
     
-    const playAgainButton = this.add.rectangle(centerX, buttonY, buttonWidth, buttonHeight, 0x5a9dd5, 1)
-      .setStrokeStyle(4, 0xffd700)
+    const playAgainButton = this.add.rectangle(centerX, buttonY, buttonWidth, buttonHeight, 0x003344, 0.8)
+      .setStrokeStyle(3, 0x00ffff, 1)
       .setInteractive({ useHandCursor: true })
-      .setDepth(1);
+      .setDepth(101);
 
-    const playAgainText = this.add.text(centerX, buttonY, 'PLAY AGAIN', {
+    const playAgainText = this.add.text(centerX, buttonY, '[ REDEPLOY TITAN ]', {
       fontSize: `${buttonFontSize}px`,
-      color: '#ffffff',
+      color: '#00ffff',
+      fontFamily: 'monospace',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4
-    }).setOrigin(0.5).setDepth(2);
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(102);
 
     // Button interactions
     playAgainButton.on('pointerover', () => {
-      playAgainButton.setFillStyle(0x6ab8e5);
-      playAgainText.setStyle({ color: '#ffff00' });
+      playAgainButton.setFillStyle(0x005566, 1);
+      playAgainButton.setStrokeStyle(3, 0xffaa00, 1);
+      playAgainText.setStyle({ color: '#ffaa00' });
     });
 
     playAgainButton.on('pointerout', () => {
-      playAgainButton.setFillStyle(0x5a9dd5);
-      playAgainText.setStyle({ color: '#ffffff' });
+      playAgainButton.setFillStyle(0x003344, 0.8);
+      playAgainButton.setStrokeStyle(3, 0x00ffff, 1);
+      playAgainText.setStyle({ color: '#00ffff' });
     });
 
     playAgainButton.on('pointerdown', () => {
@@ -256,5 +342,60 @@ export default class ResultsScene extends Phaser.Scene {
       // Re-add and start StartScene fresh (same pattern as quitToMenu in MainScene)
       this.scene.add('StartScene', StartScene, true);
     });
+  }
+
+  /**
+   * Create animated scanlines effect
+   */
+  private createScanlines(): void {
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
+    
+    // Draw horizontal scanlines
+    this.scanlineGraphics.clear();
+    this.scanlineGraphics.lineStyle(1, 0x00ffff, 0.1);
+    
+    for (let y = 0; y < gameHeight; y += 4) {
+      this.scanlineGraphics.lineBetween(0, y, gameWidth, y);
+    }
+    
+    // Animate scanlines by pulsing alpha
+    this.tweens.add({
+      targets: this.scanlineGraphics,
+      alpha: 0.5,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  /**
+   * Create corner brackets for tech aesthetic
+   */
+  private createCornerBrackets(_centerX: number, _centerY: number, gameWidth: number, gameHeight: number): void {
+    const brackets = this.add.graphics();
+    brackets.lineStyle(3, 0xff0000, 0.8);
+    
+    const cornerSize = 40;
+    const margin = 20;
+    
+    // Top-left
+    brackets.lineBetween(margin, margin, margin + cornerSize, margin);
+    brackets.lineBetween(margin, margin, margin, margin + cornerSize);
+    
+    // Top-right
+    brackets.lineBetween(gameWidth - margin, margin, gameWidth - margin - cornerSize, margin);
+    brackets.lineBetween(gameWidth - margin, margin, gameWidth - margin, margin + cornerSize);
+    
+    // Bottom-left
+    brackets.lineBetween(margin, gameHeight - margin, margin + cornerSize, gameHeight - margin);
+    brackets.lineBetween(margin, gameHeight - margin, margin, gameHeight - margin - cornerSize);
+    
+    // Bottom-right
+    brackets.lineBetween(gameWidth - margin, gameHeight - margin, gameWidth - margin - cornerSize, gameHeight - margin);
+    brackets.lineBetween(gameWidth - margin, gameHeight - margin, gameWidth - margin, gameHeight - margin - cornerSize);
+    
+    brackets.setDepth(101);
   }
 }

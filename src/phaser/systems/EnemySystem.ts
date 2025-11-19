@@ -30,6 +30,7 @@ export class EnemySystem {
   private currentWaveNumber: number = 1;
   private waveTimer: Phaser.Time.TimerEvent | null = null;
   private burstTimer: Phaser.Time.TimerEvent | null = null;
+  private wavesStarted: boolean = false; // Track if waves have started yet
 
   // Health bars for enemies
   private healthBars: Map<Phaser.Physics.Arcade.Sprite, Phaser.GameObjects.Graphics> = new Map();
@@ -58,10 +59,21 @@ export class EnemySystem {
     this.prepopulateEnemyPool();
 
     // Set up wave-based spawning if enabled
-    if (GAME_CONFIG.ENEMY.WAVES.ENABLED) {
+    if (GAME_CONFIG.ENEMY.WAVES.ENABLED && GAME_CONFIG.ENEMY.WAVES.START_DELAY > 0) {
+      // Use normal spawning until wave delay passes
+      this.spawnTimer = this.startSpawnTimer();
+      
+      // Schedule wave system to start after delay
+      this.scene.time.delayedCall(GAME_CONFIG.ENEMY.WAVES.START_DELAY, () => {
+        this.wavesStarted = true;
+        this.startWaveCycle();
+      });
+    } else if (GAME_CONFIG.ENEMY.WAVES.ENABLED) {
+      // Start waves immediately (no delay configured)
+      this.wavesStarted = true;
       this.startWaveCycle();
     } else {
-      // Set up traditional spawn timer
+      // Set up traditional spawn timer (waves disabled)
       this.spawnTimer = this.startSpawnTimer();
     }
     //this.spawnTfighterFormation();
@@ -278,8 +290,8 @@ export class EnemySystem {
       return;
     }
 
-    // If wave-based spawning is enabled, check if we're in a lull period
-    if (GAME_CONFIG.ENEMY.WAVES.ENABLED && !this.isWaveActive) {
+    // If wave-based spawning is enabled AND waves have started, check if we're in a lull period
+    if (GAME_CONFIG.ENEMY.WAVES.ENABLED && this.wavesStarted && !this.isWaveActive) {
       // During lull, spawn at reduced rate (only sometimes)
       if (Math.random() > GAME_CONFIG.ENEMY.WAVES.LULL_SPAWN_MULTIPLIER) {
         return; // Skip this spawn

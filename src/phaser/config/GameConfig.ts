@@ -20,7 +20,7 @@ export const GAME_CONFIG = {
     HEALTH_BAR_HEIGHT: 10, // Height of health bar in pixels
     DASH: {
       COOLDOWN: 3000, // ms cooldown time (3 seconds)
-      DURATION: 200, // ms dash duration
+      DURATION: 500, // ms dash duration
       SPEED_MULTIPLIER: 3.0, // How much faster than normal speed during dash
       DISTANCE: 150 // Distance to dash
     },
@@ -50,6 +50,7 @@ export const GAME_CONFIG = {
     // Wave-based spawning (Vampire Survivors style)
     WAVES: {
       ENABLED: true, // Enable wave-based spawning
+      START_DELAY: 60000, // ms - delay before waves start (60000 = 1 minute)
       WAVE_DURATION: 15000, // ms - how long a wave lasts (intense spawning)
       LULL_DURATION: 8000, // ms - how long lull period lasts (reduced spawning)
       MIN_WAVE_DURATION: 10000, // ms - minimum wave duration (scales down over time)
@@ -111,13 +112,13 @@ export const GAME_CONFIG = {
   AT: {
     SPAWN_INTERVAL: 2000, // ms between spawns (base interval)
     MAX_COUNT: 30, // Maximum number of AT enemies at once
-    MIN_LEVEL: 2, // Minimum player level before AT enemies spawn
+    MIN_LEVEL: 7, // Minimum player level before AT enemies spawn
     RELIC_DROP_CHANCE: 0.01
   },
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
     MAX_COUNT: 30, // Maximum number of Walker enemies at once
-    MIN_LEVEL: 1, // Minimum player level before Walker enemies spawn
+    MIN_LEVEL: 9, // Minimum player level before Walker enemies spawn
     RELIC_DROP_CHANCE: 0.01,
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)
@@ -246,7 +247,7 @@ export const GAME_CONFIG = {
     },
     ENEMY_GLOW: {
       COLOR: 0xff0000, // Red glow for enemies
-      INTENSITY: 1, // Light intensity
+      INTENSITY: .5, // Light intensity
       RADIUS: 100 // Light radius in pixels
     }
   },

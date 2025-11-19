@@ -23,6 +23,10 @@ export class GameUI {
   private upgradeIconsContainer: Phaser.GameObjects.Container;
   private upgradeIconSprites: Map<string, Phaser.GameObjects.Image> = new Map();
   
+  // Store health bar position for dash bar reference
+  private healthBarX: number = 0;
+  private healthBarY: number = 0;
+  
   // Mapping of upgrade IDs to icon image keys
   private upgradeIconMap: Map<string, string> = new Map([
     ['blaster', 'blaster_icon'], // Blaster starts unlocked
@@ -215,42 +219,68 @@ export class GameUI {
   }
 
   /**
-   * Internal method to update dash cooldown bar
+   * Internal method to update dash cooldown bar (vertical on left side)
    */
   private updateDashBarInternal(): void {
     const dashBar = this.dashBar;
-    const cameraBounds = this.scene.cameras.main;
 
     // Get dash cooldown progress (0 to 1, where 1 = ready)
     const cooldownProgress = this.player.getDashCooldownProgress();
 
-    // Get dimensions (same as health bar)
-    const width = GAME_CONFIG.PLAYER.HEALTH_BAR_WIDTH;
-    const height = GAME_CONFIG.PLAYER.HEALTH_BAR_HEIGHT;
+    // Vertical bar dimensions
+    const barWidth = 8; // Thin vertical bar
+    const barHeight = 60; // Taller vertical bar
 
-    // Position below health bar
-    const playerPos = this.player.getPosition();
-    const offsetX = this.player.getFlippedX() ? -10 : -40;
-    const x = playerPos.x - cameraBounds.scrollX + offsetX;
-    const y = playerPos.y - cameraBounds.scrollY + 50 + height + 5; // Below health bar with 5px gap
+    // Position relative to health bar (left side, vertically centered)
+    const x = this.healthBarX - barWidth - 5; // 5px left of health bar
+    const y = this.healthBarY - 25; // Center vertically with health bar
 
     // Clear previous graphics
     dashBar.clear();
 
     // Draw background (empty cooldown)
-    dashBar.fillStyle(0x222222, 0.8);
-    dashBar.fillRect(x, y, width, height);
+    dashBar.fillStyle(0x111111, 0.9);
+    dashBar.fillRect(x, y, barWidth, barHeight);
 
-    // Draw cooldown fill (blue when ready)
+    // Draw cooldown fill with gradient (fills from bottom to top)
     if (cooldownProgress > 0) {
-      // Blue color for dash bar
-      dashBar.fillStyle(0x0066ff, 0.8); // Blue
-      dashBar.fillRect(x, y, width * cooldownProgress, height);
+      const fillHeight = barHeight * cooldownProgress;
+      const fillY = y + barHeight - fillHeight; // Start from bottom
+      
+      // Create gradient effect by drawing segments
+      const segments = 10; // Number of gradient segments
+      const segmentHeight = fillHeight / segments;
+      
+      for (let i = 0; i < segments; i++) {
+        const segmentProgress = i / segments;
+        
+        // Gradient from dark cyan (empty) to bright cyan (full)
+        const darkCyan = 0x004466;
+        const brightCyan = 0x00ffff;
+        
+        // Interpolate color based on position in bar
+        const r1 = (darkCyan >> 16) & 0xFF;
+        const g1 = (darkCyan >> 8) & 0xFF;
+        const b1 = darkCyan & 0xFF;
+        
+        const r2 = (brightCyan >> 16) & 0xFF;
+        const g2 = (brightCyan >> 8) & 0xFF;
+        const b2 = brightCyan & 0xFF;
+        
+        const r = Math.floor(r1 + (r2 - r1) * segmentProgress);
+        const g = Math.floor(g1 + (g2 - g1) * segmentProgress);
+        const b = Math.floor(b1 + (b2 - b1) * segmentProgress);
+        
+        const color = (r << 16) | (g << 8) | b;
+        
+        dashBar.fillStyle(color, 0.9);
+        dashBar.fillRect(x, fillY + (segments - 1 - i) * segmentHeight, barWidth, segmentHeight + 1);
+      }
     }
 
     // Add border
-    dashBar.lineStyle(2, 0xffffff, 1);
-    dashBar.strokeRect(x, y, width, height);
+    dashBar.lineStyle(2, 0x00aaaa, 0.8);
+    dashBar.strokeRect(x, y, barWidth, barHeight);
   }
   
   /**
@@ -284,6 +314,10 @@ export class GameUI {
     const offsetX = this.player.getFlippedX() ? -10 : -40;
     x = playerPos.x - cameraBounds.scrollX + offsetX;
     y = playerPos.y - cameraBounds.scrollY + 50;
+
+    // Store health bar position for dash bar reference
+    this.healthBarX = x;
+    this.healthBarY = y;
 
     // Draw background (empty health)
     healthBar.fillStyle(0x222222, 0.8);
