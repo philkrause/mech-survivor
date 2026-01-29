@@ -4,6 +4,7 @@ import MainScene from '../phaser/scenes/MainScene';
 import StartScene from '../phaser/scenes/StartScene';
 import ResultsScene from '../phaser/scenes/ResultsScene';
 import IntroScene from '../phaser/scenes/IntroScene';
+import LeaderboardScene from '../phaser/scenes/LeaderboardScene';
 
 import { GAME_CONFIG } from '../phaser/config/GameConfig';
 
@@ -59,7 +60,7 @@ const Game: React.FC = () => {
         target: 60,
         forceSetTimeOut: false, // Don't use setTimeout throttling
       },
-      scene: [IntroScene, StartScene, MainScene, ResultsScene],
+      scene: [IntroScene, StartScene, MainScene, ResultsScene, LeaderboardScene],
     };
 
     // Create new game instance

@@ -206,6 +206,24 @@ export default class StartScene extends Phaser.Scene {
       buttonGroup.add([optionsButtonBg, optionsButton]);
       buttonGroup.setDepth(3);
 
+      // Leaderboard Button with enhanced styling (wider button for longer text)
+      const leaderboardButtonBg = this.add.rectangle(0, 200, 320, 80, 0x1a1a1a, 0.8)
+        .setStrokeStyle(3, 0xffffff)
+        .setAlpha(0)
+        .setInteractive({ useHandCursor: true });
+
+      const leaderboardButton = this.add.text(0, 200, 'leaderboard', {
+        fontFamily: 'StarJedi',
+        fontSize: '32px', // Slightly smaller to fit better
+        color: '#ffffff',
+        stroke: '#000',
+        strokeThickness: 4,
+        align: 'center'
+      }).setOrigin(0.5).setAlpha(0).setInteractive({ useHandCursor: true });
+
+      buttonGroup.add([leaderboardButtonBg, leaderboardButton]);
+      buttonGroup.setDepth(3);
+
       // Animate buttons entry - fade in
       this.tweens.add({
         targets: [startButton, startButtonBg],
@@ -221,6 +239,14 @@ export default class StartScene extends Phaser.Scene {
         duration: 800,
         ease: 'Power2',
         delay: 1000
+      });
+
+      this.tweens.add({
+        targets: [leaderboardButton, leaderboardButtonBg],
+        alpha: 1,
+        duration: 800,
+        ease: 'Power2',
+        delay: 1200
       });
 
       // Button hover effects with animations
@@ -265,6 +291,7 @@ export default class StartScene extends Phaser.Scene {
 
       createHoverEffect(startButton, startButtonBg);
       createHoverEffect(optionsButton, optionsButtonBg);
+      createHoverEffect(leaderboardButton, leaderboardButtonBg);
 
       // Button click handlers
       startButton.on('pointerdown', () => {
@@ -287,6 +314,14 @@ export default class StartScene extends Phaser.Scene {
           this.music.play();
         }
         this.showOptions();
+      });
+
+      leaderboardButton.on('pointerdown', () => {
+        // Fade out effect before transition
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('LeaderboardScene');
+        });
       });
 
       // Add decorative particle effect in the background

@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Leaderboard collection rules
+    match /leaderboard/{entry} {
+      
+      // Everyone can read the leaderboard (it's public data)
+      allow read: if true;
+      
+      // Allow creating new entries with validation
+      allow create: if 
+        // Must have required fields
+        request.resource.data.keys().hasAll(['name', 'kills', 'timestamp', 'deviceId'])
+        
+        // Name must be exactly 3 uppercase letters
+        && request.resource.data.name is string
+        && request.resource.data.name.matches('^[A-Z]{3}$')
+        
+        // Kills must be a positive number less than 10000 (anti-cheat)
+        && request.resource.data.kills is int
+        && request.resource.data.kills >= 0
+        && request.resource.data.kills <= 10000
+        
+        // Timestamp must be set to server time
+        && request.resource.data.timestamp == request.time
+        
+        // Device ID must be a string (for future rate limiting)
+        && request.resource.data.deviceId is string
+        && request.resource.data.deviceId.size() > 0;
+      
+      // No updates or deletes allowed (scores are immutable)
+      allow update, delete: if false;
+    }
+    
+    // Deny access to all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

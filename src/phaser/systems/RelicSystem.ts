@@ -545,7 +545,7 @@ export class RelicSystem {
     const centerY = this.scene.cameras.main.centerY;
     
     instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nPress SPACE or ENTER to claim!`);
-    instruction.setPosition(centerX, centerY + 200);
+    instruction.setPosition(centerX, centerY + 280); // Moved further down to avoid chest overlap
     instruction.setFontSize('18px');
     instruction.setColor('#ffd700');
     instruction.setStroke('#000000', 3);

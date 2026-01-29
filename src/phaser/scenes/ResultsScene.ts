@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameStats } from '../systems/StatsTracker';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
+import { LeaderboardManager } from '../systems/LeaderboardManager';
 import StartScene from './StartScene';
 import MainScene from './MainScene';
 
@@ -285,6 +286,253 @@ export default class ResultsScene extends Phaser.Scene {
       });
     }
 
+    // Check if player qualifies for leaderboard (top 10) - async
+    this.checkLeaderboardQualification(centerX, gameWidth, gameHeight, baseFontSize);
+  }
+
+  /**
+   * Check if player qualifies for leaderboard (async)
+   */
+  private async checkLeaderboardQualification(
+    centerX: number, 
+    gameWidth: number, 
+    gameHeight: number, 
+    baseFontSize: number
+  ): Promise<void> {
+    // Show checking message
+    const checkingY = gameHeight * 0.82;
+    const checkingText = this.add.text(centerX, checkingY, 'CHECKING LEADERBOARD...', {
+      fontSize: `${baseFontSize}px`,
+      color: '#00ffff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: checkingText,
+      alpha: 0.5,
+      duration: 600,
+      yoyo: true,
+      repeat: -1
+    });
+
+    try {
+      const isTopTen = await LeaderboardManager.isTopTen(this.gameStats.enemiesDefeated);
+      
+      // Remove checking text
+      checkingText.destroy();
+      
+      if (isTopTen) {
+        // Show "NEW RECORD!" message
+        const recordY = gameHeight * 0.82;
+        this.add.text(centerX, recordY, '>>> NEW RECORD! <<<', {
+          fontSize: `${baseFontSize * 1.3}px`,
+          color: '#ffaa00',
+          fontFamily: 'monospace',
+          fontStyle: 'bold',
+          stroke: '#ff0000',
+          strokeThickness: 2
+        }).setOrigin(0.5).setDepth(3);
+
+        // Prompt for name
+        this.promptForName(centerX, recordY + 40, baseFontSize);
+      } else {
+        // Show regular play again button
+        this.createPlayAgainButton(centerX, gameWidth, gameHeight, baseFontSize);
+      }
+    } catch (error) {
+      console.error('Failed to check leaderboard:', error);
+      // Remove checking text
+      checkingText.destroy();
+      // Show play again button even if check fails
+      this.createPlayAgainButton(centerX, gameWidth, gameHeight, baseFontSize);
+    }
+  }
+
+  /**
+   * Prompt player to enter 3-letter name for leaderboard
+   */
+  private promptForName(x: number, y: number, baseFontSize: number): void {
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
+
+    // Instruction text
+    this.add.text(x, y, 'ENTER PILOT NAME:', {
+      fontSize: `${baseFontSize}px`,
+      color: '#00ffff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3);
+
+    // Name display (3 letters)
+    let nameLetters = ['_', '_', '_'];
+    let currentIndex = 0;
+
+    const nameText = this.add.text(x, y + 40, nameLetters.join(' '), {
+      fontSize: `${baseFontSize * 1.8}px`,
+      color: '#ffaa00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      letterSpacing: 10
+    }).setOrigin(0.5).setDepth(3);
+
+    // Blinking cursor under current letter
+    const cursorY = y + 65;
+    const cursor = this.add.text(x - 40 + (currentIndex * 40), cursorY, '▲', {
+      fontSize: `${baseFontSize}px`,
+      color: '#00ffff',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5).setDepth(3);
+
+    // Pulse animation for cursor
+    this.tweens.add({
+      targets: cursor,
+      alpha: 0,
+      duration: 500,
+      yoyo: true,
+      repeat: -1
+    });
+
+    // Hint text
+    this.add.text(x, y + 95, 'TYPE TO ENTER • BACKSPACE TO DELETE', {
+      fontSize: `${baseFontSize * 0.7}px`,
+      color: '#666666',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5).setDepth(3);
+
+    // Keyboard input handler
+    this.input.keyboard?.on('keydown', (event: any) => {
+      // Only accept A-Z keys
+      if (event.key && event.key.length === 1 && event.key.match(/[a-zA-Z]/)) {
+        if (currentIndex < 3) {
+          nameLetters[currentIndex] = event.key.toUpperCase();
+          currentIndex++;
+          nameText.setText(nameLetters.join(' '));
+          
+          // Update cursor position
+          if (currentIndex < 3) {
+            cursor.x = x - 40 + (currentIndex * 40);
+          } else {
+            cursor.setVisible(false); // Hide when all 3 letters entered
+          }
+
+          // If all 3 letters entered, save and show play button
+          if (currentIndex === 3) {
+            const name = nameLetters.join('');
+            this.saveToLeaderboard(name);
+            
+            // Wait a moment then show play button
+            this.time.delayedCall(800, () => {
+              this.createPlayAgainButton(x, gameWidth, gameHeight, baseFontSize);
+            });
+          }
+        }
+      } else if (event.key === 'Backspace' && currentIndex > 0) {
+        // Backspace - delete last letter
+        currentIndex--;
+        nameLetters[currentIndex] = '_';
+        nameText.setText(nameLetters.join(' '));
+        cursor.x = x - 40 + (currentIndex * 40);
+        cursor.setVisible(true);
+      }
+    });
+  }
+
+  /**
+   * Save score to leaderboard (async)
+   */
+  private async saveToLeaderboard(name: string): Promise<void> {
+    const messageY = this.scale.height * 0.82 + 140;
+    
+    // Show saving message
+    const savingText = this.add.text(this.scale.width / 2, messageY, 
+      'SAVING TO GLOBAL LEADERBOARD...', {
+      fontSize: `${Math.min(20, this.scale.width * 0.02)}px`,
+      color: '#00ffff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: savingText,
+      alpha: 0.5,
+      duration: 600,
+      yoyo: true,
+      repeat: 3 // Repeat a few times while saving
+    });
+
+    try {
+      const ranking = await LeaderboardManager.addEntry(name, this.gameStats.enemiesDefeated);
+      
+      // Remove saving text
+      savingText.destroy();
+      
+      if (ranking) {
+        // Show success message
+        const successText = this.add.text(this.scale.width / 2, messageY, 
+          `RANK #${ranking} ACHIEVED!`, {
+          fontSize: `${Math.min(22, this.scale.width * 0.022)}px`,
+          color: '#00ff00',
+          fontFamily: 'monospace',
+          fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(3);
+
+        // Fade out success message
+        this.tweens.add({
+          targets: successText,
+          alpha: 0,
+          duration: 2000,
+          delay: 1000
+        });
+      } else {
+        // Show failure message (shouldn't happen if validation worked)
+        const failText = this.add.text(this.scale.width / 2, messageY, 
+          'FAILED TO SAVE SCORE', {
+          fontSize: `${Math.min(20, this.scale.width * 0.02)}px`,
+          color: '#ff6600',
+          fontFamily: 'monospace',
+          fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(3);
+
+        // Fade out failure message
+        this.tweens.add({
+          targets: failText,
+          alpha: 0,
+          duration: 2000,
+          delay: 1000
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save to leaderboard:', error);
+      
+      // Remove saving text
+      savingText.destroy();
+      
+      // Show error message
+      const errorText = this.add.text(this.scale.width / 2, messageY, 
+        'CONNECTION ERROR - SCORE NOT SAVED', {
+        fontSize: `${Math.min(20, this.scale.width * 0.02)}px`,
+        color: '#ff0000',
+        fontFamily: 'monospace',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(3);
+
+      // Fade out error message
+      this.tweens.add({
+        targets: errorText,
+        alpha: 0,
+        duration: 2000,
+        delay: 1000
+      });
+    }
+  }
+
+  /**
+   * Create the play again button
+   */
+  private createPlayAgainButton(centerX: number, gameWidth: number, gameHeight: number, _baseFontSize: number): void {
     // Play Again button at bottom - mech-themed
     const buttonY = gameHeight * 0.92; // 92% from top
     const buttonWidth = Math.min(400, gameWidth * 0.5); // Responsive width, max 400px

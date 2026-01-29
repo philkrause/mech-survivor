@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "leaderboard": {
+      ".read": true,
+      ".write": true,
+      "$entryId": {
+        ".validate": "newData.hasChildren(['name', 'kills', 'timestamp', 'deviceId'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+        },
+        "kills": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "deviceId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        }
+      }
+    }
+  }
+}
+
