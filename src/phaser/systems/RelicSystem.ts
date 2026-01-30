@@ -16,6 +16,7 @@ export class RelicSystem {
   private isAnimationComplete: boolean = false;
   private spaceKey: Phaser.Input.Keyboard.Key | null = null;
   private enterKey: Phaser.Input.Keyboard.Key | null = null;
+  private pointerHandler: ((pointer: Phaser.Input.Pointer) => void) | null = null;
   private isStressTestMode: boolean = false;
   // Baby Yoda fountain state
   private yodaSprites: Phaser.GameObjects.Image[] = [];
@@ -366,8 +367,8 @@ export class RelicSystem {
     // Show a specific frame to make sure spritesheet is working
     relicDisplay.setFrame(0);
 
-    // Create instruction text
-    const instruction = this.scene.add.text(centerX, centerY + 200, 'Press SPACE or ENTER to stop slot or claim relic!', {
+    // Create instruction text (mobile-friendly)
+    const instruction = this.scene.add.text(centerX, centerY + 200, 'TAP SCREEN or Press SPACE/ENTER to claim relic!', {
       fontSize: '20px',
       color: '#ffffff',
       stroke: '#000000',
@@ -456,6 +457,12 @@ export class RelicSystem {
     // Add enter key listener
     this.enterKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER) || null;
     this.enterKey?.on('down', handleRelicSelection);
+
+    // Add touch/pointer listener for mobile support
+    this.pointerHandler = () => {
+      handleRelicSelection();
+    };
+    this.scene.input.on('pointerdown', this.pointerHandler);
   }
 
   /**
@@ -544,7 +551,7 @@ export class RelicSystem {
     const centerX = this.scene.cameras.main.centerX;
     const centerY = this.scene.cameras.main.centerY;
     
-    instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nPress SPACE or ENTER to claim!`);
+    instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nTAP or Press SPACE/ENTER to claim!`);
     instruction.setPosition(centerX, centerY + 280); // Moved further down to avoid chest overlap
     instruction.setFontSize('18px');
     instruction.setColor('#ffd700');
@@ -774,6 +781,12 @@ export class RelicSystem {
       this.enterKey.off('down');
       this.enterKey = null;
     }
+    
+    // Remove touch listener
+    if (this.pointerHandler) {
+      this.scene.input.off('pointerdown', this.pointerHandler);
+      this.pointerHandler = null;
+    }
   }
 
   /**
@@ -866,6 +879,12 @@ export class RelicSystem {
     if (this.enterKey) {
       this.enterKey.off('down');
       this.enterKey = null;
+    }
+    
+    // Remove touch listener
+    if (this.pointerHandler) {
+      this.scene.input.off('pointerdown', this.pointerHandler);
+      this.pointerHandler = null;
     }
   }
 

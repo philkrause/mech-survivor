@@ -616,10 +616,56 @@ export class Player {
 
     // Check for mobile touch input first
     if (this.isMobile && this.isTouching) {
-      return {
-        x: this.touchDirection.x,
-        y: this.touchDirection.y
-      };
+      dirX = this.touchDirection.x;
+      dirY = this.touchDirection.y;
+      
+      // Handle sprite flipping and animation for mobile touch
+      if (!this.dead) {
+        let primaryDirection = this.isFlippedX ? 'left' : 'right';
+        
+        // Flip sprite based on horizontal touch direction
+        if (dirX < -0.1) { // Moving left
+          this.sprite.setFlipX(true);
+          if (this.sprite.body) {
+            const frameWidth = 96;
+            const scale = GAME_CONFIG.PLAYER.SCALE;
+            const baseOffsetX = ((frameWidth - frameWidth * 0.45) / 2) * scale - 14;
+            const flippedOffsetX = baseOffsetX + (14 * 2);
+            this.sprite.body.setOffset(flippedOffsetX, ((96 - 96 * 0.70) / 2) * scale + 16);
+          }
+          this.isFlippedX = true;
+          primaryDirection = 'left';
+        } else if (dirX > 0.1) { // Moving right
+          this.sprite.setFlipX(false);
+          if (this.sprite.body) {
+            const frameWidth = 96;
+            const scale = GAME_CONFIG.PLAYER.SCALE;
+            this.sprite.body.setOffset(
+              ((frameWidth - frameWidth * 0.45) / 2) * scale - 14,
+              ((96 - 96 * 0.70) / 2) * scale + 16
+            );
+          }
+          this.isFlippedX = false;
+          primaryDirection = 'right';
+        }
+        
+        // Determine primary direction based on touch vector
+        if (Math.abs(dirY) > Math.abs(dirX)) {
+          // Vertical movement is dominant
+          if (dirY < 0) {
+            primaryDirection = 'up';
+          } else if (dirY > 0) {
+            primaryDirection = 'down';
+          }
+        }
+        
+        // Update sprite animation for mobile touch
+        if (dirX !== 0 || dirY !== 0) {
+          this.updatePlayerSprite(primaryDirection);
+        }
+      }
+      
+      return { x: dirX, y: dirY };
     }
 
     // Desktop keyboard input
