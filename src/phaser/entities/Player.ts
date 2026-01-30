@@ -25,6 +25,11 @@ export class Player {
   private dead: boolean = false;
   private scene: Phaser.Scene;
   private flashlight!: Phaser.GameObjects.Light; // Flashlight for the player
+  
+  // Mobile touch controls
+  private isMobile: boolean = false;
+  private touchDirection: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
+  private isTouching: boolean = false;
   // Blaster properties
   private attackTimer: Phaser.Time.TimerEvent | null = null;
   private projectileSystem: ProjectileSystem | null = null;
@@ -539,6 +544,66 @@ export class Player {
         this.attemptDash();
       }
     });
+
+    // Detect if mobile device
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Setup touch controls for mobile
+    if (this.isMobile) {
+      this.setupTouchControls();
+    }
+  }
+
+  /**
+   * Setup touch controls for mobile devices
+   */
+  private setupTouchControls(): void {
+    // Handle touch/pointer down
+    this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.dead || this.isLevelingUp) return;
+      
+      this.isTouching = true;
+      this.updateTouchDirection(pointer);
+    });
+
+    // Handle touch/pointer move
+    this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.dead || this.isLevelingUp) return;
+      
+      if (pointer.isDown) {
+        this.isTouching = true;
+        this.updateTouchDirection(pointer);
+      }
+    });
+
+    // Handle touch/pointer up
+    this.scene.input.on('pointerup', () => {
+      this.isTouching = false;
+      this.touchDirection.set(0, 0);
+    });
+  }
+
+  /**
+   * Update touch direction based on pointer position
+   */
+  private updateTouchDirection(pointer: Phaser.Input.Pointer): void {
+    // Get player position
+    const playerX = this.sprite.x;
+    const playerY = this.sprite.y;
+
+    // Calculate direction to touch point
+    const dx = pointer.worldX - playerX;
+    const dy = pointer.worldY - playerY;
+
+    // Normalize direction
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Only move if touch is far enough away (avoid jittering when touching near player)
+    if (distance > 30) {
+      this.touchDirection.set(dx / distance, dy / distance);
+    } else {
+      this.touchDirection.set(0, 0);
+    }
   }
 
 
@@ -549,6 +614,15 @@ export class Player {
     let dirX = 0;
     let dirY = 0;
 
+    // Check for mobile touch input first
+    if (this.isMobile && this.isTouching) {
+      return {
+        x: this.touchDirection.x,
+        y: this.touchDirection.y
+      };
+    }
+
+    // Desktop keyboard input
     const left = this.wasdKeys.A.isDown || this.cursors.left!.isDown;
     const right = this.wasdKeys.D.isDown || this.cursors.right!.isDown;
     const up = this.wasdKeys.W.isDown || this.cursors.up!.isDown;
