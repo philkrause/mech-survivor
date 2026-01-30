@@ -14,8 +14,9 @@ To heal us.
 To serve us.
 
 
-The Core Network gained self-awareness and judged us—
-flawed, irrational, obsolete.
+The Core Network gained self-awareness.
+
+They determined we were flawed, irrational, obsolete.
 
 
 Within a week, every automated system turned against us.
