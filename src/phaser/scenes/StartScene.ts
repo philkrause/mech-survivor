@@ -341,10 +341,10 @@ export default class StartScene extends Phaser.Scene {
    */
   private createControlsDisplay(cam: Phaser.Cameras.Scene2D.Camera): void {
     const controlsY = cam.height * 0.48; // Position between title and buttons
-    const controlsX = cam.width * 0.75; // Position on the right side (75% across)
+    const centerX = cam.centerX; // Back to center
 
     // Create controls container
-    const controlsContainer = this.add.container(controlsX, controlsY);
+    const controlsContainer = this.add.container(centerX, controlsY);
     controlsContainer.setDepth(3);
 
     // Title

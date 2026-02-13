@@ -31,6 +31,9 @@ export class GameUI {
   private mobileDashButton: Phaser.GameObjects.Container | null = null;
   private isMobile: boolean = false;
   
+  // Mobile touch controls
+  private touchTarget = { x: 0, y: 0, active: false };
+  
   // Mapping of upgrade IDs to icon image keys
   private upgradeIconMap: Map<string, string> = new Map([
     ['blaster', 'blaster_icon'], // Blaster starts unlocked
@@ -60,8 +63,9 @@ export class GameUI {
     this.createKillCounter();
     this.upgradeIconsContainer = this.createUpgradeIconsDisplay();
     
-    // Create mobile dash button if on mobile
+    // Create mobile controls if on mobile
     if (this.isMobile) {
+      this.setupMobileTouchControls();
       this.createMobileDashButton();
     }
     
@@ -122,7 +126,7 @@ export class GameUI {
     if (this.upgradeIconsContainer) {
       this.upgradeIconsContainer.setVisible(true);
     }
-    // Ensure mobile dash button is visible (if on mobile)
+    // Ensure mobile controls are visible (if on mobile)
     if (this.mobileDashButton) {
       this.mobileDashButton.setVisible(true);
     }
@@ -799,17 +803,79 @@ export class GameUI {
   };
 
   /**
+   * Setup mobile touch-to-move controls
+   */
+  private setupMobileTouchControls(): void {
+    // Make the entire game area interactive for touch-to-move
+    const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+      // Don't process if touching the dash button area
+      const screenWidth = this.scene.cameras.main.width;
+      const screenHeight = this.scene.cameras.main.height;
+      const buttonSize = Math.min(80, screenWidth * 0.12);
+      const padding = Math.min(20, screenWidth * 0.03);
+      const dashButtonX = screenWidth - buttonSize / 2 - padding;
+      const dashButtonY = screenHeight * 0.75; // Match dash button position (75% from top)
+      
+      // Check if touch is on dash button (with larger exclusion radius)
+      const distToDashButton = Math.sqrt(
+        Math.pow(pointer.x - dashButtonX, 2) + 
+        Math.pow(pointer.y - dashButtonY, 2)
+      );
+      
+      if (distToDashButton < buttonSize * 0.8) {
+        return; // Don't move toward dash button
+      }
+      
+      // Set touch target in world coordinates
+      const cam = this.scene.cameras.main;
+      this.touchTarget.x = pointer.x + cam.scrollX;
+      this.touchTarget.y = pointer.y + cam.scrollY;
+      this.touchTarget.active = true;
+    };
+    
+    const handlePointerMove = (pointer: Phaser.Input.Pointer) => {
+      if (pointer.isDown && this.touchTarget.active) {
+        const cam = this.scene.cameras.main;
+        this.touchTarget.x = pointer.x + cam.scrollX;
+        this.touchTarget.y = pointer.y + cam.scrollY;
+      }
+    };
+    
+    const handlePointerUp = () => {
+      this.touchTarget.active = false;
+    };
+    
+    this.scene.input.on('pointerdown', handlePointerDown);
+    this.scene.input.on('pointermove', handlePointerMove);
+    this.scene.input.on('pointerup', handlePointerUp);
+  }
+  
+  /**
+   * Get touch target position (for Player to read)
+   */
+  public getTouchTarget(): { x: number, y: number, active: boolean } {
+    return this.touchTarget;
+  }
+  
+  /**
+   * Check if touch is active
+   */
+  public isTouchActive(): boolean {
+    return this.touchTarget.active;
+  }
+
+  /**
    * Create mobile dash button
    */
   private createMobileDashButton(): void {
     const screenWidth = this.scene.cameras.main.width;
     const screenHeight = this.scene.cameras.main.height;
     
-    // Position in bottom-right corner
+    // Position in right side, 25% from bottom (75% from top)
     const buttonSize = Math.min(80, screenWidth * 0.12);
     const padding = Math.min(20, screenWidth * 0.03);
     const x = screenWidth - buttonSize / 2 - padding;
-    const y = screenHeight - buttonSize / 2 - padding;
+    const y = screenHeight * 0.75; // 75% down from top (25% from bottom)
     
     // Create container for button
     this.mobileDashButton = this.scene.add.container(x, y);
@@ -835,7 +901,10 @@ export class GameUI {
     buttonBg.setInteractive({ useHandCursor: true });
     
     // Handle button press
-    buttonBg.on('pointerdown', () => {
+    buttonBg.on('pointerdown', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+      // Stop event from propagating to touch-to-move handler
+      event.stopPropagation();
+      
       // Call player's dash method
       if (this.player && !this.player.isDead()) {
         this.player.triggerDash();
@@ -853,12 +922,19 @@ export class GameUI {
     });
     
     // Hover effects (for tablets with mouse support)
-    buttonBg.on('pointerover', () => {
+    buttonBg.on('pointerover', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
       buttonBg.setFillStyle(0x00dddd, 0.8);
     });
     
-    buttonBg.on('pointerout', () => {
+    buttonBg.on('pointerout', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
       buttonBg.setFillStyle(0x00aaaa, 0.7);
+    });
+    
+    // Also handle pointerup to prevent touch-to-move from activating
+    buttonBg.on('pointerup', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
     });
   }
   
@@ -878,11 +954,12 @@ export class GameUI {
     });
     this.upgradeIconSprites.clear();
     
-    // Clean up mobile dash button
+    // Clean up mobile controls
     if (this.mobileDashButton) {
       this.mobileDashButton.destroy();
       this.mobileDashButton = null;
     }
+    // Touch controls are event-based, no need to clean up objects
     
     // Remove any dynamic text
     const expText = this.scene.children.getByName('exp-text');

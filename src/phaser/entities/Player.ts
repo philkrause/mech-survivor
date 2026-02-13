@@ -543,12 +543,55 @@ export class Player {
 
 
   /**
-   * Gets the input direction based on keyboard state
+   * Gets the input direction based on keyboard state or mobile touch
    */
   private getInputDirection(): { x: number, y: number } {
     let dirX = 0;
     let dirY = 0;
 
+    // Check for mobile touch input first
+    const gameUI = (this.scene as any).gameUI;
+    if (gameUI && gameUI.isTouchActive && gameUI.isTouchActive()) {
+      const touchTarget = gameUI.getTouchTarget();
+      
+      // Calculate direction from player to touch target
+      const playerX = this.sprite.x;
+      const playerY = this.sprite.y;
+      const deltaX = touchTarget.x - playerX;
+      const deltaY = touchTarget.y - playerY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // Only move if touch is far enough away (deadzone of 20 pixels)
+      if (distance > 20) {
+        dirX = deltaX / distance;
+        dirY = deltaY / distance;
+        
+        // Update sprite based on touch direction
+        let primaryDirection = this.isFlippedX ? 'left' : 'right';
+        
+        if (dirX < -0.3) {
+          primaryDirection = 'left';
+          this.isFlippedX = true;
+        } else if (dirX > 0.3) {
+          primaryDirection = 'right';
+          this.isFlippedX = false;
+        }
+        
+        if (Math.abs(dirY) > Math.abs(dirX)) {
+          if (dirY < -0.3) {
+            primaryDirection = 'up';
+          } else if (dirY > 0.3) {
+            primaryDirection = 'down';
+          }
+        }
+        
+        this.updatePlayerSprite(primaryDirection);
+      }
+      
+      return { x: dirX, y: dirY };
+    }
+
+    // Fall back to keyboard input
     const left = this.wasdKeys.A.isDown || this.cursors.left!.isDown;
     const right = this.wasdKeys.D.isDown || this.cursors.right!.isDown;
     const up = this.wasdKeys.W.isDown || this.cursors.up!.isDown;

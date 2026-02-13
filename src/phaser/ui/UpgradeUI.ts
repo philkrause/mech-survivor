@@ -219,7 +219,11 @@ export class UpgradeUI {
     // Center the box relative to camera view (account for scroll)
     // For unbounded camera, we need to position relative to camera's world view
     const boxX = cam.scrollX + cam.width / 2;
-    const boxY = cam.scrollY + cam.height / 2;
+    
+    // On mobile, position higher up (35% from top instead of 50%)
+    const isMobile = screenWidth < 768;
+    const verticalPosition = isMobile ? 0.35 : 0.5;
+    const boxY = cam.scrollY + cam.height * verticalPosition;
 
     // Create main box background - more vibrant colors
     this.mainBox = this.scene.add.rectangle(

@@ -852,9 +852,12 @@ export default class MainScene extends Phaser.Scene {
     // Hide health and dash bars to prevent covering level up stats
     this.gameUI.hideBars();
     
-    // Show stats panel
-    this.playerStatsPanel.show();
-    this.playerStatsPanel.updateStats();
+    // Only show stats panel on desktop (hide on mobile to prevent overlap)
+    const isMobile = this.cameras.main.width < 768;
+    if (!isMobile) {
+      this.playerStatsPanel.show();
+      this.playerStatsPanel.updateStats();
+    }
     
     // Show upgrade UI
     this.upgradeUI.show(3, (upgradeId: string) => {

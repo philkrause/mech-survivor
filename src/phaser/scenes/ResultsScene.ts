@@ -94,13 +94,16 @@ export default class ResultsScene extends Phaser.Scene {
     panelGraphics.strokeRect(leftPanelX - 20, currentY - 30, panelWidth, panelHeight);
     panelGraphics.setDepth(2);
 
-    // Basic stats - use proportional spacing between labels and values
-    const valueX = gameWidth * 0.55; // 55% from left (responsive for mobile)
+    // Detect mobile
+    const isMobile = gameWidth < 768;
     
-    // Calculate responsive font size based on screen width
-    const baseFontSize = Math.max(24, Math.min(32, gameWidth * 0.03)); // Scale between 24-32px
-    const headingFontSize = Math.max(20, Math.min(24, gameWidth * 0.025)); // Scale between 20-24px
-    const rowSpacing = gameHeight * 0.05; // 5% of screen height between rows
+    // Basic stats - use proportional spacing between labels and values
+    const valueX = isMobile ? gameWidth * 0.70 : gameWidth * 0.55; // Move values further right on mobile
+    
+    // Calculate responsive font size based on screen width (smaller on mobile)
+    const baseFontSize = isMobile ? Math.max(16, gameWidth * 0.025) : Math.max(24, Math.min(32, gameWidth * 0.03));
+    const headingFontSize = isMobile ? Math.max(14, gameWidth * 0.022) : Math.max(20, Math.min(24, gameWidth * 0.025));
+    const rowSpacing = isMobile ? gameHeight * 0.04 : gameHeight * 0.05; // Tighter spacing on mobile
 
     this.add.text(leftPanelX, currentY, 'TIME SURVIVED:', {
       fontSize: `${baseFontSize}px`,
@@ -147,12 +150,12 @@ export default class ResultsScene extends Phaser.Scene {
     }).setOrigin(1, 0.5).setDepth(3); // Right-aligned
     currentY += rowSpacing * 1.5;
 
-    // Weapon stats table header with separator
+    // Weapon stats table header with separator - adjust for mobile
     const weaponCol1 = leftPanelX; // Weapon name (left-aligned)
-    const weaponCol2 = gameWidth * 0.35; // LV (right-aligned, responsive)
-    const weaponCol3 = gameWidth * 0.48; // Damage (right-aligned, responsive)
-    const weaponCol4 = gameWidth * 0.62; // Time (right-aligned, responsive)
-    const weaponCol5 = gameWidth * 0.75; // DPS (right-aligned, responsive)
+    const weaponCol2 = isMobile ? gameWidth * 0.42 : gameWidth * 0.35; // LV
+    const weaponCol3 = isMobile ? gameWidth * 0.58 : gameWidth * 0.48; // Damage
+    const weaponCol4 = isMobile ? gameWidth * 0.72 : gameWidth * 0.62; // Time
+    const weaponCol5 = isMobile ? gameWidth * 0.86 : gameWidth * 0.75; // DPS
     
     // Draw separator line
     const separatorGraphics = this.add.graphics();
@@ -445,11 +448,16 @@ export default class ResultsScene extends Phaser.Scene {
     };
 
     if (isMobile) {
-      // Mobile: Create on-screen keyboard
-      this.createMobileKeyboard(x, y + 100, addLetter, deleteLetter);
+      // Mobile: Use native HTML input
+      this.createNativeInput(x, y + 95, baseFontSize, (name: string) => {
+        // Fill in the name
+        for (let i = 0; i < Math.min(3, name.length); i++) {
+          addLetter(name[i]);
+        }
+      });
       
       // Hint text for mobile
-      this.add.text(x, y + 95, 'TAP LETTERS BELOW', {
+      this.add.text(x, y + 95, 'TAP TO ENTER NAME', {
         fontSize: `${baseFontSize * 0.7}px`,
         color: '#666666',
         fontFamily: 'monospace'
@@ -473,6 +481,64 @@ export default class ResultsScene extends Phaser.Scene {
         }
       });
     }
+  }
+
+  /**
+   * Create native HTML input for mobile
+   */
+  private createNativeInput(
+    x: number,
+    y: number,
+    baseFontSize: number,
+    onComplete: (name: string) => void
+  ): void {
+    // Create HTML input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 3;
+    input.placeholder = 'AAA';
+    input.style.position = 'absolute';
+    input.style.left = `${x - 75}px`;
+    input.style.top = `${y + 20}px`;
+    input.style.width = '150px';
+    input.style.height = '50px';
+    input.style.fontSize = `${baseFontSize * 1.2}px`;
+    input.style.textAlign = 'center';
+    input.style.textTransform = 'uppercase';
+    input.style.backgroundColor = '#001a2e';
+    input.style.color = '#ffaa00';
+    input.style.border = '3px solid #00ffff';
+    input.style.borderRadius = '8px';
+    input.style.fontFamily = 'monospace';
+    input.style.fontWeight = 'bold';
+    input.style.letterSpacing = '5px';
+    input.style.zIndex = '10000';
+    
+    // Add to DOM
+    document.body.appendChild(input);
+    
+    // Auto-focus to bring up keyboard
+    setTimeout(() => input.focus(), 100);
+    
+    // Handle input
+    input.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      target.value = target.value.toUpperCase().replace(/[^A-Z]/g, '');
+    });
+    
+    // Handle completion (blur or enter)
+    const complete = () => {
+      const name = input.value.toUpperCase().padEnd(3, '_');
+      document.body.removeChild(input);
+      onComplete(name);
+    };
+    
+    input.addEventListener('blur', complete);
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && input.value.length === 3) {
+        complete();
+      }
+    });
   }
 
   /**
