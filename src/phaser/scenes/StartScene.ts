@@ -18,7 +18,7 @@ export default class StartScene extends Phaser.Scene {
     //this.load.image('darthback', '../../../assets/images/game/darth_back.png');
     
     // Load menu music
-    this.load.audio('menu_music', '../../../assets/audio/menu_music.wav');
+    this.load.audio('menu_music', '../../../assets/audio/menu_music.mp3');
   }
 
   create() {
@@ -324,6 +324,9 @@ export default class StartScene extends Phaser.Scene {
         });
       });
 
+      // Add controls display
+      this.createControlsDisplay(cam);
+
       // Add decorative particle effect in the background
       this.createParticleEffect();
 
@@ -331,6 +334,68 @@ export default class StartScene extends Phaser.Scene {
       this.cameras.main.fadeIn(500, 0, 0, 0);
     });
 
+  }
+
+  /**
+   * Create controls display showing keyboard controls
+   */
+  private createControlsDisplay(cam: Phaser.Cameras.Scene2D.Camera): void {
+    const controlsY = cam.height * 0.48; // Position between title and buttons
+    const controlsX = cam.width * 0.75; // Position on the right side (75% across)
+
+    // Create controls container
+    const controlsContainer = this.add.container(controlsX, controlsY);
+    controlsContainer.setDepth(3);
+
+    // Title
+    const controlsTitle = this.add.text(0, -30, 'controls', {
+      fontFamily: 'StarJedi',
+      fontSize: '20px',
+      color: '#ffff00',
+      stroke: '#000',
+      strokeThickness: 3,
+      align: 'center'
+    }).setOrigin(0.5);
+
+    // Arrow keys text
+    const arrowText = this.add.text(-100, 0, '↑ ← ↓ →', {
+      fontSize: '28px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    const moveText = this.add.text(-100, 25, 'Move', {
+      fontSize: '14px',
+      color: '#cccccc',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    // Spacebar text
+    const spaceText = this.add.text(100, 0, 'SPACE', {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    const dashText = this.add.text(100, 25, 'Dash', {
+      fontSize: '14px',
+      color: '#cccccc',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    controlsContainer.add([controlsTitle, arrowText, moveText, spaceText, dashText]);
+
+    // Fade in animation
+    controlsContainer.setAlpha(0);
+    this.tweens.add({
+      targets: controlsContainer,
+      alpha: 1,
+      duration: 800,
+      delay: 1400,
+      ease: 'Power2'
+    });
   }
 
   /**

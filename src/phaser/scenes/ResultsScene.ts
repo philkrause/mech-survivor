@@ -351,11 +351,23 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   /**
+   * Detect if the device is mobile
+   */
+  private isMobileDevice(): boolean {
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth < 768;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileUA = /mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    return (hasTouch && isSmallScreen) || isMobileUA;
+  }
+
+  /**
    * Prompt player to enter 3-letter name for leaderboard
    */
   private promptForName(x: number, y: number, baseFontSize: number): void {
     const gameWidth = this.scale.width;
     const gameHeight = this.scale.height;
+    const isMobile = this.isMobileDevice();
 
     // Instruction text
     this.add.text(x, y, 'ENTER PILOT NAME:', {
@@ -394,48 +406,194 @@ export default class ResultsScene extends Phaser.Scene {
       repeat: -1
     });
 
-    // Hint text
-    this.add.text(x, y + 95, 'TYPE TO ENTER • BACKSPACE TO DELETE', {
-      fontSize: `${baseFontSize * 0.7}px`,
-      color: '#666666',
-      fontFamily: 'monospace'
-    }).setOrigin(0.5).setDepth(3);
-
-    // Keyboard input handler
-    this.input.keyboard?.on('keydown', (event: any) => {
-      // Only accept A-Z keys
-      if (event.key && event.key.length === 1 && event.key.match(/[a-zA-Z]/)) {
+    // Function to add a letter
+    const addLetter = (letter: string) => {
+      if (currentIndex < 3) {
+        nameLetters[currentIndex] = letter.toUpperCase();
+        currentIndex++;
+        nameText.setText(nameLetters.join(' '));
+        
+        // Update cursor position
         if (currentIndex < 3) {
-          nameLetters[currentIndex] = event.key.toUpperCase();
-          currentIndex++;
-          nameText.setText(nameLetters.join(' '));
-          
-          // Update cursor position
-          if (currentIndex < 3) {
-            cursor.x = x - 40 + (currentIndex * 40);
-          } else {
-            cursor.setVisible(false); // Hide when all 3 letters entered
-          }
-
-          // If all 3 letters entered, save and show play button
-          if (currentIndex === 3) {
-            const name = nameLetters.join('');
-            this.saveToLeaderboard(name);
-            
-            // Wait a moment then show play button
-            this.time.delayedCall(800, () => {
-              this.createPlayAgainButton(x, gameWidth, gameHeight, baseFontSize);
-            });
-          }
+          cursor.x = x - 40 + (currentIndex * 40);
+        } else {
+          cursor.setVisible(false); // Hide when all 3 letters entered
         }
-      } else if (event.key === 'Backspace' && currentIndex > 0) {
-        // Backspace - delete last letter
+
+        // If all 3 letters entered, save and show play button
+        if (currentIndex === 3) {
+          const name = nameLetters.join('');
+          this.saveToLeaderboard(name);
+          
+          // Wait a moment then show play button
+          this.time.delayedCall(800, () => {
+            this.createPlayAgainButton(x, gameWidth, gameHeight, baseFontSize);
+          });
+        }
+      }
+    };
+
+    // Function to delete last letter
+    const deleteLetter = () => {
+      if (currentIndex > 0) {
         currentIndex--;
         nameLetters[currentIndex] = '_';
         nameText.setText(nameLetters.join(' '));
         cursor.x = x - 40 + (currentIndex * 40);
         cursor.setVisible(true);
       }
+    };
+
+    if (isMobile) {
+      // Mobile: Create on-screen keyboard
+      this.createMobileKeyboard(x, y + 100, addLetter, deleteLetter);
+      
+      // Hint text for mobile
+      this.add.text(x, y + 95, 'TAP LETTERS BELOW', {
+        fontSize: `${baseFontSize * 0.7}px`,
+        color: '#666666',
+        fontFamily: 'monospace'
+      }).setOrigin(0.5).setDepth(3);
+    } else {
+      // Desktop: Use keyboard input
+      // Hint text for desktop
+      this.add.text(x, y + 95, 'TYPE TO ENTER • BACKSPACE TO DELETE', {
+        fontSize: `${baseFontSize * 0.7}px`,
+        color: '#666666',
+        fontFamily: 'monospace'
+      }).setOrigin(0.5).setDepth(3);
+
+      // Keyboard input handler
+      this.input.keyboard?.on('keydown', (event: any) => {
+        // Only accept A-Z keys
+        if (event.key && event.key.length === 1 && event.key.match(/[a-zA-Z]/)) {
+          addLetter(event.key);
+        } else if (event.key === 'Backspace') {
+          deleteLetter();
+        }
+      });
+    }
+  }
+
+  /**
+   * Create mobile on-screen keyboard
+   */
+  private createMobileKeyboard(
+    centerX: number, 
+    startY: number, 
+    onLetterTap: (letter: string) => void,
+    onDelete: () => void
+  ): void {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const buttonSize = Math.min(35, this.scale.width * 0.08);
+    const buttonSpacing = Math.min(5, this.scale.width * 0.01);
+    const lettersPerRow = 7;
+    
+    // Calculate keyboard width
+    const keyboardWidth = (buttonSize * lettersPerRow) + (buttonSpacing * (lettersPerRow - 1));
+    const startX = centerX - keyboardWidth / 2;
+    
+    letters.forEach((letter, index) => {
+      const row = Math.floor(index / lettersPerRow);
+      const col = index % lettersPerRow;
+      const x = startX + col * (buttonSize + buttonSpacing);
+      const y = startY + row * (buttonSize + buttonSpacing);
+      
+      // Create button background
+      const button = this.add.rectangle(x, y, buttonSize, buttonSize, 0x003344, 0.9);
+      button.setStrokeStyle(2, 0x00ffff, 0.8);
+      button.setOrigin(0, 0);
+      button.setDepth(3);
+      button.setInteractive({ useHandCursor: true });
+      
+      // Create letter text
+      const letterText = this.add.text(
+        x + buttonSize / 2, 
+        y + buttonSize / 2, 
+        letter, 
+        {
+          fontSize: `${Math.floor(buttonSize * 0.5)}px`,
+          color: '#ffffff',
+          fontStyle: 'bold',
+          fontFamily: 'monospace'
+        }
+      );
+      letterText.setOrigin(0.5);
+      letterText.setDepth(4);
+      
+      // Button interactions
+      button.on('pointerdown', () => {
+        onLetterTap(letter);
+        // Visual feedback
+        this.tweens.add({
+          targets: [button, letterText],
+          scale: 0.9,
+          duration: 100,
+          yoyo: true,
+          ease: 'Power2'
+        });
+      });
+      
+      button.on('pointerover', () => {
+        button.setFillStyle(0x005566, 1);
+      });
+      
+      button.on('pointerout', () => {
+        button.setFillStyle(0x003344, 0.9);
+      });
+    });
+    
+    // Add backspace button
+    const backspaceRow = Math.ceil(letters.length / lettersPerRow);
+    const backspaceX = startX + Math.floor(lettersPerRow / 2) * (buttonSize + buttonSpacing);
+    const backspaceY = startY + backspaceRow * (buttonSize + buttonSpacing);
+    const backspaceWidth = buttonSize * 2 + buttonSpacing;
+    
+    const backspaceButton = this.add.rectangle(
+      backspaceX, 
+      backspaceY, 
+      backspaceWidth, 
+      buttonSize, 
+      0x554400, 
+      0.9
+    );
+    backspaceButton.setStrokeStyle(2, 0xffaa00, 0.8);
+    backspaceButton.setOrigin(0, 0);
+    backspaceButton.setDepth(3);
+    backspaceButton.setInteractive({ useHandCursor: true });
+    
+    const backspaceText = this.add.text(
+      backspaceX + backspaceWidth / 2,
+      backspaceY + buttonSize / 2,
+      '⌫ DEL',
+      {
+        fontSize: `${Math.floor(buttonSize * 0.4)}px`,
+        color: '#ffffff',
+        fontStyle: 'bold',
+        fontFamily: 'monospace'
+      }
+    );
+    backspaceText.setOrigin(0.5);
+    backspaceText.setDepth(4);
+    
+    backspaceButton.on('pointerdown', () => {
+      onDelete();
+      // Visual feedback
+      this.tweens.add({
+        targets: [backspaceButton, backspaceText],
+        scale: 0.9,
+        duration: 100,
+        yoyo: true,
+        ease: 'Power2'
+      });
+    });
+    
+    backspaceButton.on('pointerover', () => {
+      backspaceButton.setFillStyle(0x776600, 1);
+    });
+    
+    backspaceButton.on('pointerout', () => {
+      backspaceButton.setFillStyle(0x554400, 0.9);
     });
   }
 

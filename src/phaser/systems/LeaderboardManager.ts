@@ -221,6 +221,9 @@ export class LeaderboardManager {
         return null;
       }
 
+      // Get ranking BEFORE adding to database (so we don't compare against ourselves)
+      const ranking = await this.getRanking(kills);
+
       // Add to Realtime Database
       const leaderboardRef = ref(db, this.DB_PATH);
       await push(leaderboardRef, {
@@ -236,8 +239,6 @@ export class LeaderboardManager {
       this.cachedLeaderboard = null;
       this.cacheTimestamp = 0;
 
-      // Get updated ranking (force refresh to get latest data)
-      const ranking = await this.getRanking(kills);
       return ranking;
       
     } catch (error) {

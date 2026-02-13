@@ -97,7 +97,9 @@ export default class MainScene extends Phaser.Scene {
     // Initialize asset manager and load assets
     this.assetManager = new AssetManager(this);
     this.assetManager.preloadAssets();
-    // Game music removed - will need new game music file
+    
+    // Load gameplay music
+    this.load.audio('gameplay_music', '../../../assets/audio/gameplay_music.mp3');
     
     // Load sound effects
     this.load.audio('blaster', '../../../assets/audio/laser2.wav');
@@ -122,9 +124,8 @@ export default class MainScene extends Phaser.Scene {
    * Create game objects and initialize systems
    */
   create(): void {
-    // stop menu music (if it exists)
-    // Note: Game music removed - will need new game music file
-
+    // Stop any music from previous scenes (e.g., menu music)
+    this.sound.stopAll();
 
     // Create the game world
     this.assetManager = new AssetManager(this);
@@ -174,13 +175,12 @@ export default class MainScene extends Phaser.Scene {
     // Initialize global volume to 50% by default
     this.sound.volume = 0.5;
 
-    // Game music removed - will need new game music file
-    // When adding new game music, uncomment and update:
-    // this.music = this.sound.add('game_music', {
-    //   loop: true,
-    //   volume: 1.0 // Full volume (respects global volume, which is 0.5 by default)
-    // });
-    // this.music.play();
+    // Add and play gameplay music
+    this.music = this.sound.add('gameplay_music', {
+      loop: true,
+      volume: 1.0 // Full volume (respects global volume, which is 0.5 by default)
+    });
+    this.music.play();
 
     // ****** Instatiate SYSTEMS******   
 
@@ -945,7 +945,6 @@ export default class MainScene extends Phaser.Scene {
     
     // Update music volume (music should be at 1.0 to respect global volume)
     // The effective volume will be volume * 1.0 = volume
-    // Note: Game music removed - will need new game music file
     if (this.music) {
       (this.music as Phaser.Sound.WebAudioSound).setVolume(1.0);
     }
@@ -955,6 +954,11 @@ export default class MainScene extends Phaser.Scene {
    * Quit to main menu
    */
   private quitToMenu(): void {
+    // Stop gameplay music
+    if (this.music && this.music.isPlaying) {
+      this.music.stop();
+    }
+    
     this.pauseMenu.hide();
     this.scene.stop('MainScene');
     this.scene.remove('StartScene');
@@ -1293,6 +1297,11 @@ export default class MainScene extends Phaser.Scene {
    * Show results screen when player dies
    */
   showResults(): void {
+    // Stop gameplay music
+    if (this.music && this.music.isPlaying) {
+      this.music.stop();
+    }
+    
     // Get player level and relics
     const playerLevel = this.player.getLevel();
     const playerRelics = (this.player as any).relics as Set<string> | undefined;

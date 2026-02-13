@@ -25,11 +25,6 @@ export class Player {
   private dead: boolean = false;
   private scene: Phaser.Scene;
   private flashlight!: Phaser.GameObjects.Light; // Flashlight for the player
-  
-  // Mobile touch controls
-  private isMobile: boolean = false;
-  private touchDirection: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
-  private isTouching: boolean = false;
   // Blaster properties
   private attackTimer: Phaser.Time.TimerEvent | null = null;
   private projectileSystem: ProjectileSystem | null = null;
@@ -544,66 +539,6 @@ export class Player {
         this.attemptDash();
       }
     });
-
-    // Detect if mobile device
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Setup touch controls for mobile
-    if (this.isMobile) {
-      this.setupTouchControls();
-    }
-  }
-
-  /**
-   * Setup touch controls for mobile devices
-   */
-  private setupTouchControls(): void {
-    // Handle touch/pointer down
-    this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (this.dead || this.isLevelingUp) return;
-      
-      this.isTouching = true;
-      this.updateTouchDirection(pointer);
-    });
-
-    // Handle touch/pointer move
-    this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (this.dead || this.isLevelingUp) return;
-      
-      if (pointer.isDown) {
-        this.isTouching = true;
-        this.updateTouchDirection(pointer);
-      }
-    });
-
-    // Handle touch/pointer up
-    this.scene.input.on('pointerup', () => {
-      this.isTouching = false;
-      this.touchDirection.set(0, 0);
-    });
-  }
-
-  /**
-   * Update touch direction based on pointer position
-   */
-  private updateTouchDirection(pointer: Phaser.Input.Pointer): void {
-    // Get player position
-    const playerX = this.sprite.x;
-    const playerY = this.sprite.y;
-
-    // Calculate direction to touch point
-    const dx = pointer.worldX - playerX;
-    const dy = pointer.worldY - playerY;
-
-    // Normalize direction
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Only move if touch is far enough away (avoid jittering when touching near player)
-    if (distance > 30) {
-      this.touchDirection.set(dx / distance, dy / distance);
-    } else {
-      this.touchDirection.set(0, 0);
-    }
   }
 
 
@@ -614,61 +549,6 @@ export class Player {
     let dirX = 0;
     let dirY = 0;
 
-    // Check for mobile touch input first
-    if (this.isMobile && this.isTouching) {
-      dirX = this.touchDirection.x;
-      dirY = this.touchDirection.y;
-      
-      // Handle sprite flipping and animation for mobile touch
-      if (!this.dead) {
-        let primaryDirection = this.isFlippedX ? 'left' : 'right';
-        
-        // Flip sprite based on horizontal touch direction
-        if (dirX < -0.1) { // Moving left
-          this.sprite.setFlipX(true);
-          if (this.sprite.body) {
-            const frameWidth = 96;
-            const scale = GAME_CONFIG.PLAYER.SCALE;
-            const baseOffsetX = ((frameWidth - frameWidth * 0.45) / 2) * scale - 14;
-            const flippedOffsetX = baseOffsetX + (14 * 2);
-            this.sprite.body.setOffset(flippedOffsetX, ((96 - 96 * 0.70) / 2) * scale + 16);
-          }
-          this.isFlippedX = true;
-          primaryDirection = 'left';
-        } else if (dirX > 0.1) { // Moving right
-          this.sprite.setFlipX(false);
-          if (this.sprite.body) {
-            const frameWidth = 96;
-            const scale = GAME_CONFIG.PLAYER.SCALE;
-            this.sprite.body.setOffset(
-              ((frameWidth - frameWidth * 0.45) / 2) * scale - 14,
-              ((96 - 96 * 0.70) / 2) * scale + 16
-            );
-          }
-          this.isFlippedX = false;
-          primaryDirection = 'right';
-        }
-        
-        // Determine primary direction based on touch vector
-        if (Math.abs(dirY) > Math.abs(dirX)) {
-          // Vertical movement is dominant
-          if (dirY < 0) {
-            primaryDirection = 'up';
-          } else if (dirY > 0) {
-            primaryDirection = 'down';
-          }
-        }
-        
-        // Update sprite animation for mobile touch
-        if (dirX !== 0 || dirY !== 0) {
-          this.updatePlayerSprite(primaryDirection);
-        }
-      }
-      
-      return { x: dirX, y: dirY };
-    }
-
-    // Desktop keyboard input
     const left = this.wasdKeys.A.isDown || this.cursors.left!.isDown;
     const right = this.wasdKeys.D.isDown || this.cursors.right!.isDown;
     const up = this.wasdKeys.W.isDown || this.cursors.up!.isDown;
@@ -1747,6 +1627,13 @@ deathVisual(): void {
   }
 
 
+  }
+
+  /**
+   * Public method to trigger dash (for mobile button)
+   */
+  public triggerDash(): void {
+    this.attemptDash();
   }
 
   /**

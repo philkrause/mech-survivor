@@ -27,6 +27,10 @@ export class GameUI {
   private healthBarX: number = 0;
   private healthBarY: number = 0;
   
+  // Mobile dash button
+  private mobileDashButton: Phaser.GameObjects.Container | null = null;
+  private isMobile: boolean = false;
+  
   // Mapping of upgrade IDs to icon image keys
   private upgradeIconMap: Map<string, string> = new Map([
     ['blaster', 'blaster_icon'], // Blaster starts unlocked
@@ -39,6 +43,10 @@ export class GameUI {
   constructor(scene: Phaser.Scene, player: Player) {
     this.scene = scene;
     this.player = player;
+    
+    // Detect if mobile
+    this.isMobile = this.detectMobile();
+    
     // Create UI elements
     //this.createInstructionText();
     //this.enemyCountText = this.createEnemyCounterText();
@@ -51,6 +59,12 @@ export class GameUI {
     this.gameTimer = this.createGameTimer();
     this.createKillCounter();
     this.upgradeIconsContainer = this.createUpgradeIconsDisplay();
+    
+    // Create mobile dash button if on mobile
+    if (this.isMobile) {
+      this.createMobileDashButton();
+    }
+    
     this.startTime = this.scene.time.now;
     
     // Listen for level up events
@@ -60,6 +74,23 @@ export class GameUI {
     
     // Initial update to show starting upgrades (like blaster)
     this.updateUpgradeIcons();
+  }
+
+  /**
+   * Detect if the device is mobile
+   */
+  private detectMobile(): boolean {
+    // Check for touch support
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Check screen size (mobile typically < 768px width)
+    const isSmallScreen = window.innerWidth < 768;
+    
+    // Check user agent as fallback
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileUA = /mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    return (hasTouch && isSmallScreen) || isMobileUA;
   }
 
   /** Ensure core UI elements are visible and recreated if needed */
@@ -90,6 +121,10 @@ export class GameUI {
     // Ensure upgrade icons are visible
     if (this.upgradeIconsContainer) {
       this.upgradeIconsContainer.setVisible(true);
+    }
+    // Ensure mobile dash button is visible (if on mobile)
+    if (this.mobileDashButton) {
+      this.mobileDashButton.setVisible(true);
     }
   }
   
@@ -762,6 +797,70 @@ export class GameUI {
   private onUpgradeApplied = (_upgradeId: string): void => {
     this.updateUpgradeIcons();
   };
+
+  /**
+   * Create mobile dash button
+   */
+  private createMobileDashButton(): void {
+    const screenWidth = this.scene.cameras.main.width;
+    const screenHeight = this.scene.cameras.main.height;
+    
+    // Position in bottom-right corner
+    const buttonSize = Math.min(80, screenWidth * 0.12);
+    const padding = Math.min(20, screenWidth * 0.03);
+    const x = screenWidth - buttonSize / 2 - padding;
+    const y = screenHeight - buttonSize / 2 - padding;
+    
+    // Create container for button
+    this.mobileDashButton = this.scene.add.container(x, y);
+    this.mobileDashButton.setScrollFactor(0);
+    this.mobileDashButton.setDepth(2001); // Above other UI
+    
+    // Create button background (circle)
+    const buttonBg = this.scene.add.circle(0, 0, buttonSize / 2, 0x00aaaa, 0.7);
+    buttonBg.setStrokeStyle(3, 0x00ffff, 0.9);
+    this.mobileDashButton.add(buttonBg);
+    
+    // Create button icon/text
+    const buttonText = this.scene.add.text(0, 0, 'DASH', {
+      fontSize: `${Math.max(16, buttonSize * 0.25)}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+      align: 'center'
+    });
+    buttonText.setOrigin(0.5);
+    this.mobileDashButton.add(buttonText);
+    
+    // Make button interactive
+    buttonBg.setInteractive({ useHandCursor: true });
+    
+    // Handle button press
+    buttonBg.on('pointerdown', () => {
+      // Call player's dash method
+      if (this.player && !this.player.isDead()) {
+        this.player.triggerDash();
+      }
+      
+      // Visual feedback
+      this.scene.tweens.add({
+        targets: buttonBg,
+        scale: 0.9,
+        alpha: 0.5,
+        duration: 100,
+        yoyo: true,
+        ease: 'Power2'
+      });
+    });
+    
+    // Hover effects (for tablets with mouse support)
+    buttonBg.on('pointerover', () => {
+      buttonBg.setFillStyle(0x00dddd, 0.8);
+    });
+    
+    buttonBg.on('pointerout', () => {
+      buttonBg.setFillStyle(0x00aaaa, 0.7);
+    });
+  }
   
   /**
    * Clean up resources
@@ -778,6 +877,12 @@ export class GameUI {
       }
     });
     this.upgradeIconSprites.clear();
+    
+    // Clean up mobile dash button
+    if (this.mobileDashButton) {
+      this.mobileDashButton.destroy();
+      this.mobileDashButton = null;
+    }
     
     // Remove any dynamic text
     const expText = this.scene.children.getByName('exp-text');

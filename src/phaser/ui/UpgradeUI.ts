@@ -42,17 +42,18 @@ export class UpgradeUI {
     this.overlay.setVisible(false);
     this.container.add(this.overlay);
 
-    // Create title text - more visible and vibrant
+    // Create title text - more visible and vibrant (responsive)
+    const titleFontSize = Math.max(32, Math.min(48, this.scene.scale.width * 0.06));
     this.titleText = this.scene.add.text(
       0, 0,
       'LEVEL UP!',
       {
-        fontSize: '48px',
+        fontSize: `${titleFontSize}px`,
         color: '#ffff00', // Bright yellow
         fontStyle: 'bold',
         align: 'center',
         stroke: '#000000',
-        strokeThickness: 5,
+        strokeThickness: Math.max(3, Math.min(5, titleFontSize * 0.1)),
         shadow: {
           offsetX: 3,
           offsetY: 3,
@@ -201,11 +202,18 @@ export class UpgradeUI {
   private createUpgradeBox(upgrades: Upgrade[]): void {
     const cam = this.scene.cameras.main;
     
-    // Main box dimensions - smaller to avoid covering stats panel
-    const boxWidth = 500;
-    const sectionHeight = 100;
+    // Make dimensions responsive to screen size
+    const screenWidth = cam.width;
+    const screenHeight = cam.height;
+    
+    // Box width: 90% of screen width, max 500px for desktop
+    const boxWidth = Math.min(500, screenWidth * 0.9);
+    
+    // Section height: scale based on screen height, min 80px for small screens
+    const sectionHeight = Math.max(80, Math.min(100, screenHeight * 0.12));
+    
     const sectionSpacing = 8;
-    const padding = 20;
+    const padding = Math.max(15, Math.min(20, screenWidth * 0.03));
     const boxHeight = (sectionHeight * upgrades.length) + (sectionSpacing * (upgrades.length - 1)) + (padding * 2);
 
     // Center the box relative to camera view (account for scroll)
@@ -229,6 +237,12 @@ export class UpgradeUI {
     this.upgrades = upgrades;
     this.selectedCardIndex = 0;
 
+    // Calculate responsive font sizes (using screenWidth already declared above)
+    const iconSize = Math.max(18, Math.min(24, screenWidth * 0.03));
+    const nameFontSize = Math.max(16, Math.min(22, screenWidth * 0.028));
+    const levelFontSize = Math.max(14, Math.min(18, screenWidth * 0.024));
+    const descFontSize = Math.max(13, Math.min(17, screenWidth * 0.022));
+
     upgrades.forEach((upgrade, index) => {
       const sectionY = boxY - boxHeight / 2 + padding + (sectionHeight / 2) + (index * (sectionHeight + sectionSpacing));
 
@@ -248,11 +262,12 @@ export class UpgradeUI {
       const isNew = currentLevel === 0;
 
       // Create icon (placeholder - using text for now)
+      const iconOffset = Math.max(15, Math.min(20, screenWidth * 0.025));
       const iconText = this.scene.add.text(
-        -boxWidth / 2 + padding + 20, 0,
+        -boxWidth / 2 + padding + iconOffset, 0,
         '●', // Placeholder icon
         {
-          fontSize: '24px',
+          fontSize: `${iconSize}px`,
           color: '#ffffff'
         }
       );
@@ -260,11 +275,12 @@ export class UpgradeUI {
       section.add(iconText);
 
       // Create upgrade name text - brighter
+      const textStartX = Math.max(45, Math.min(60, screenWidth * 0.08));
       const nameText = this.scene.add.text(
-        -boxWidth / 2 + padding + 60, -20,
+        -boxWidth / 2 + padding + textStartX, -sectionHeight * 0.2,
         upgrade.name,
         {
-          fontSize: '22px',
+          fontSize: `${nameFontSize}px`,
           color: '#ffffff',
           fontStyle: 'bold',
           align: 'left',
@@ -277,10 +293,10 @@ export class UpgradeUI {
 
       // Create level or "New!" text (right-aligned)
       const levelOrNewText = this.scene.add.text(
-        boxWidth / 2 - padding - 10, -20,
+        boxWidth / 2 - padding - 10, -sectionHeight * 0.2,
         isNew ? 'New!' : `level: ${currentLevel}`,
         {
-          fontSize: '18px',
+          fontSize: `${levelFontSize}px`,
           color: isNew ? '#ffdd00' : '#ffffff',
           fontStyle: isNew ? 'bold' : 'normal',
           align: 'right'
@@ -291,13 +307,13 @@ export class UpgradeUI {
 
       // Create description text - brighter
       const descText = this.scene.add.text(
-        -boxWidth / 2 + padding + 60, 20,
+        -boxWidth / 2 + padding + textStartX, sectionHeight * 0.2,
         upgrade.description,
         {
-          fontSize: '17px',
+          fontSize: `${descFontSize}px`,
           color: '#e0e0e0', // Brighter grey
           align: 'left',
-          wordWrap: { width: boxWidth - padding * 2 - 120 }
+          wordWrap: { width: boxWidth - padding * 2 - textStartX - 20 }
         }
       );
       descText.setOrigin(0, 0.5);
