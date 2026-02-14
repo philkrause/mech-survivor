@@ -303,8 +303,10 @@ export default class ResultsScene extends Phaser.Scene {
     gameHeight: number, 
     baseFontSize: number
   ): Promise<void> {
-    // Show checking message
-    const checkingY = gameHeight * 0.82;
+    const isMobile = gameWidth < 768;
+    
+    // Show checking message - higher on mobile
+    const checkingY = isMobile ? gameHeight * 0.68 : gameHeight * 0.82;
     const checkingText = this.add.text(centerX, checkingY, 'CHECKING LEADERBOARD...', {
       fontSize: `${baseFontSize}px`,
       color: '#00ffff',
@@ -328,8 +330,8 @@ export default class ResultsScene extends Phaser.Scene {
       checkingText.destroy();
       
       if (isTopTen) {
-        // Show "NEW RECORD!" message
-        const recordY = gameHeight * 0.82;
+        // Show "NEW RECORD!" message - higher on mobile
+        const recordY = isMobile ? gameHeight * 0.68 : gameHeight * 0.82;
         this.add.text(centerX, recordY, '>>> NEW RECORD! <<<', {
           fontSize: `${baseFontSize * 1.3}px`,
           color: '#ffaa00',
@@ -444,9 +446,39 @@ export default class ResultsScene extends Phaser.Scene {
           }
         }
 
-        // If all 3 letters entered, save and show play button
+        // If all 3 letters entered, check if valid and save
         if (currentIndex === 3) {
           const name = nameLetters.join('');
+          
+          // Check for blocked words
+          const blockedWords = ['NIG', 'FAG', 'KKK', 'ASS', 'FUK', 'FCK', 'DIK', 'KYS', 'WTF'];
+          if (blockedWords.includes(name)) {
+            // Reset and show error
+            currentIndex = 0;
+            nameLetters = ['_', '_', '_'];
+            nameText.setText(nameLetters.join(' '));
+            nameText.setColor('#ff6666'); // Red to indicate error
+            
+            // Flash error
+            this.tweens.add({
+              targets: nameText,
+              alpha: 0.3,
+              duration: 200,
+              yoyo: true,
+              repeat: 2,
+              onComplete: () => {
+                nameText.setColor('#ffaa00'); // Back to normal color
+              }
+            });
+            
+            if (!isMobile) {
+              cursor.setVisible(true);
+              cursor.x = x - 40;
+            }
+            return;
+          }
+          
+          // Valid name - save and continue
           this.saveToLeaderboard(name);
           
           // Wait a moment then show play button
@@ -578,9 +610,22 @@ export default class ResultsScene extends Phaser.Scene {
       const target = e.target as HTMLInputElement;
       target.value = target.value.toUpperCase().replace(/[^A-Z]/g, '');
       
-      // Enable submit button when 3 letters entered
-      submitButton.disabled = target.value.length < 3;
-      submitButton.style.opacity = target.value.length < 3 ? '0.5' : '1.0';
+      // Check for blocked words
+      const blockedWords = ['NIG', 'FAG', 'KKK', 'ASS', 'FUK', 'FCK', 'DIK', 'KYS', 'WTF'];
+      const isBlocked = blockedWords.includes(target.value);
+      
+      // Enable submit button when 3 letters entered AND not blocked
+      submitButton.disabled = target.value.length < 3 || isBlocked;
+      submitButton.style.opacity = (target.value.length < 3 || isBlocked) ? '0.5' : '1.0';
+      
+      // Show warning if blocked
+      if (isBlocked) {
+        input.style.borderColor = '#ff0000';
+        input.style.color = '#ff6666';
+      } else {
+        input.style.borderColor = '#00ffff';
+        input.style.color = '#ffaa00';
+      }
     });
     
     // Initially disable submit button
@@ -592,6 +637,21 @@ export default class ResultsScene extends Phaser.Scene {
       if (!container.parentElement) return; // Already removed
       
       const name = input.value.toUpperCase().padEnd(3, '_');
+      
+      // Check for blocked words before submission
+      const blockedWords = ['NIG', 'FAG', 'KKK', 'ASS', 'FUK', 'FCK', 'DIK', 'KYS', 'WTF'];
+      if (blockedWords.includes(name)) {
+        // Flash red and prevent submission
+        input.style.borderColor = '#ff0000';
+        input.style.backgroundColor = '#330000';
+        setTimeout(() => {
+          input.style.borderColor = '#00ffff';
+          input.style.backgroundColor = '#001a2e';
+          input.value = '';
+        }, 500);
+        return;
+      }
+      
       document.body.removeChild(container);
       onComplete(name);
     };
@@ -605,7 +665,7 @@ export default class ResultsScene extends Phaser.Scene {
     
     submitButton.addEventListener('click', (e) => {
       e.preventDefault();
-      if (input.value.length >= 1) { // Allow submission with 1+ letters
+      if (input.value.length >= 1 && !submitButton.disabled) { // Only if not disabled
         complete();
       }
     });
@@ -717,8 +777,10 @@ export default class ResultsScene extends Phaser.Scene {
    * Create the play again button
    */
   private createPlayAgainButton(centerX: number, gameWidth: number, gameHeight: number, _baseFontSize: number): void {
-    // Play Again button at bottom - mech-themed
-    const buttonY = gameHeight * 0.92; // 92% from top
+    const isMobile = gameWidth < 768;
+    
+    // Play Again button at bottom - mech-themed (higher on mobile to avoid toolbar)
+    const buttonY = isMobile ? gameHeight * 0.85 : gameHeight * 0.92; // Higher on mobile (85% vs 92%)
     const buttonWidth = Math.min(400, gameWidth * 0.5); // Responsive width, max 400px
     const buttonHeight = Math.min(70, gameHeight * 0.09); // Responsive height, max 70px
     const buttonFontSize = Math.max(24, Math.min(36, gameWidth * 0.035)); // Responsive font size

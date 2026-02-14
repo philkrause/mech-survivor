@@ -186,6 +186,12 @@ export class LeaderboardManager {
       return { valid: false, reason: 'Name must be 3 uppercase letters' };
     }
     
+    // Block inappropriate words
+    const blockedWords = ['NIG', 'FAG', 'KKK', 'ASS', 'FUK', 'FCK', 'DIK', 'KYS', 'WTF'];
+    if (blockedWords.includes(name.toUpperCase())) {
+      return { valid: false, reason: 'Name not allowed' };
+    }
+    
     // Check kills is reasonable
     if (kills < 0) {
       return { valid: false, reason: 'Kills cannot be negative' };

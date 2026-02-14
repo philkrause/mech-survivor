@@ -366,12 +366,18 @@ export class RelicSystem {
     // Show a specific frame to make sure spritesheet is working
     relicDisplay.setFrame(0);
 
-    // Create instruction text
+    // Create instruction text (responsive for mobile)
+    const screenWidth = this.scene.cameras.main.width;
+    const isMobile = screenWidth < 768;
+    const instructionFontSize = isMobile ? 14 : 18;
+    
     const instruction = this.scene.add.text(centerX, centerY + 200, 'Press SPACE/ENTER or TAP to stop slot or claim relic!', {
-      fontSize: '18px',
+      fontSize: `${instructionFontSize}px`,
       color: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 2
+      strokeThickness: 2,
+      align: 'center',
+      wordWrap: { width: screenWidth * 0.85 } // Wrap text at 85% screen width
     }).setOrigin(0.5).setDepth(3001).setScrollFactor(0);
 
     // Store references for early stop functionality
@@ -547,13 +553,17 @@ export class RelicSystem {
     // Update instruction to show relic name and stat boost
     const centerX = this.scene.cameras.main.centerX;
     const centerY = this.scene.cameras.main.centerY;
+    const screenWidth = this.scene.cameras.main.width;
+    const isMobile = screenWidth < 768;
+    const descFontSize = isMobile ? 14 : 18;
     
     instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nPress SPACE/ENTER or TAP to claim!`);
     instruction.setPosition(centerX, centerY + 280); // Moved further down to avoid chest overlap
-    instruction.setFontSize('18px');
+    instruction.setFontSize(`${descFontSize}px`);
     instruction.setColor('#ffd700');
     instruction.setStroke('#000000', 3);
     instruction.setAlign('center');
+    instruction.setWordWrapWidth(screenWidth * 0.85); // Wrap text on mobile
     instruction.setScrollFactor(0);
 
     // Store the selected relic for claiming
