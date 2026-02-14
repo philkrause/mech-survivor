@@ -30,6 +30,7 @@ export class GameUI {
   // Mobile dash button
   private mobileDashButton: Phaser.GameObjects.Container | null = null;
   private isMobile: boolean = false;
+  private dashButtonBounds = { x: 0, y: 0, radius: 0 };
   
   // Mobile touch controls
   private touchTarget = { x: 0, y: 0, active: false };
@@ -65,8 +66,8 @@ export class GameUI {
     
     // Create mobile controls if on mobile
     if (this.isMobile) {
-      this.setupMobileTouchControls();
-      this.createMobileDashButton();
+      this.createMobileDashButton(); // Create button first
+      this.setupMobileTouchControls(); // Then set up touch handler
     }
     
     this.startTime = this.scene.time.now;
@@ -809,21 +810,13 @@ export class GameUI {
     // Make the entire game area interactive for touch-to-move
     const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
       // Don't process if touching the dash button area
-      const screenWidth = this.scene.cameras.main.width;
-      const screenHeight = this.scene.cameras.main.height;
-      const buttonSize = Math.min(80, screenWidth * 0.12);
-      const padding = Math.min(20, screenWidth * 0.03);
-      const dashButtonX = screenWidth - buttonSize / 2 - padding;
-      const dashButtonY = screenHeight * 0.75; // Match dash button position (75% from top)
-      
-      // Check if touch is on dash button (with larger exclusion radius)
       const distToDashButton = Math.sqrt(
-        Math.pow(pointer.x - dashButtonX, 2) + 
-        Math.pow(pointer.y - dashButtonY, 2)
+        Math.pow(pointer.x - this.dashButtonBounds.x, 2) + 
+        Math.pow(pointer.y - this.dashButtonBounds.y, 2)
       );
       
-      if (distToDashButton < buttonSize * 0.8) {
-        return; // Don't move toward dash button
+      if (distToDashButton < this.dashButtonBounds.radius * 1.2) {
+        return; // Don't move toward dash button (with 20% extra exclusion zone)
       }
       
       // Set touch target in world coordinates
@@ -877,6 +870,9 @@ export class GameUI {
     const x = screenWidth - buttonSize / 2 - padding;
     const y = screenHeight * 0.75; // 75% down from top (25% from bottom)
     
+    // Store button bounds for touch exclusion
+    this.dashButtonBounds = { x, y, radius: buttonSize / 2 };
+    
     // Create container for button
     this.mobileDashButton = this.scene.add.container(x, y);
     this.mobileDashButton.setScrollFactor(0);
@@ -900,11 +896,8 @@ export class GameUI {
     // Make button interactive
     buttonBg.setInteractive({ useHandCursor: true });
     
-    // Handle button press
-    buttonBg.on('pointerdown', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
-      // Stop event from propagating to touch-to-move handler
-      event.stopPropagation();
-      
+    // Handle button press (use 'pointerup' for better mobile responsiveness)
+    buttonBg.on('pointerup', () => {
       // Call player's dash method
       if (this.player && !this.player.isDead()) {
         this.player.triggerDash();
@@ -921,20 +914,18 @@ export class GameUI {
       });
     });
     
+    // Visual feedback on press
+    buttonBg.on('pointerdown', () => {
+      buttonBg.setFillStyle(0x008888, 0.9);
+    });
+    
     // Hover effects (for tablets with mouse support)
-    buttonBg.on('pointerover', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
+    buttonBg.on('pointerover', () => {
       buttonBg.setFillStyle(0x00dddd, 0.8);
     });
     
-    buttonBg.on('pointerout', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
+    buttonBg.on('pointerout', () => {
       buttonBg.setFillStyle(0x00aaaa, 0.7);
-    });
-    
-    // Also handle pointerup to prevent touch-to-move from activating
-    buttonBg.on('pointerup', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
     });
   }
   

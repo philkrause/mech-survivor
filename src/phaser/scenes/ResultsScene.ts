@@ -49,10 +49,14 @@ export default class ResultsScene extends Phaser.Scene {
     // Add corner brackets for tech feel
     this.createCornerBrackets(centerX, centerY, gameWidth, gameHeight);
 
-    // Title - dramatic mech-themed with glow
+    // Title - dramatic mech-themed with glow (responsive for mobile)
+    const isMobile = gameWidth < 768;
     const titleY = gameHeight * 0.08; // 8% from top
+    const titleFontSize = isMobile ? Math.min(36, gameWidth * 0.08) : 64;
+    const subtitleFontSize = isMobile ? Math.min(16, gameWidth * 0.04) : 24;
+    
     const title = this.add.text(centerX, titleY, '[ MISSION REPORT ]', {
-      fontSize: '64px',
+      fontSize: `${titleFontSize}px`,
       color: '#00ffff',
       fontFamily: 'monospace',
       fontStyle: 'bold',
@@ -62,8 +66,8 @@ export default class ResultsScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(101);
     
     // Add subtitle
-    this.add.text(centerX, titleY + 40, 'PILOT STATUS: K.I.A.', {
-      fontSize: '24px',
+    this.add.text(centerX, titleY + (isMobile ? 25 : 40), 'PILOT STATUS: K.I.A.', {
+      fontSize: `${subtitleFontSize}px`,
       color: '#ff3333',
       fontFamily: 'monospace',
       fontStyle: 'bold',
@@ -492,14 +496,18 @@ export default class ResultsScene extends Phaser.Scene {
     baseFontSize: number,
     onComplete: (name: string) => void
   ): void {
+    // Get the canvas element to position relative to it
+    const canvas = this.game.canvas;
+    const canvasRect = canvas.getBoundingClientRect();
+    
     // Create HTML input element
     const input = document.createElement('input');
     input.type = 'text';
     input.maxLength = 3;
     input.placeholder = 'AAA';
-    input.style.position = 'absolute';
-    input.style.left = `${x - 75}px`;
-    input.style.top = `${y + 20}px`;
+    input.style.position = 'fixed'; // Use fixed positioning
+    input.style.left = `${canvasRect.left + x - 75}px`;
+    input.style.top = `${canvasRect.top + y + 20}px`;
     input.style.width = '150px';
     input.style.height = '50px';
     input.style.fontSize = `${baseFontSize * 1.2}px`;
@@ -513,31 +521,73 @@ export default class ResultsScene extends Phaser.Scene {
     input.style.fontWeight = 'bold';
     input.style.letterSpacing = '5px';
     input.style.zIndex = '10000';
+    input.style.outline = 'none';
     
     // Add to DOM
     document.body.appendChild(input);
     
-    // Auto-focus to bring up keyboard
-    setTimeout(() => input.focus(), 100);
+    // Auto-focus to bring up keyboard (with slight delay for mobile)
+    setTimeout(() => {
+      input.focus();
+      input.click(); // Some mobile browsers need click too
+    }, 200);
     
     // Handle input
     input.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
       target.value = target.value.toUpperCase().replace(/[^A-Z]/g, '');
+      
+      // Auto-submit when 3 letters entered
+      if (target.value.length === 3) {
+        setTimeout(() => complete(), 100);
+      }
     });
     
     // Handle completion (blur or enter)
     const complete = () => {
+      if (!input.parentElement) return; // Already removed
+      
       const name = input.value.toUpperCase().padEnd(3, '_');
       document.body.removeChild(input);
       onComplete(name);
     };
     
-    input.addEventListener('blur', complete);
     input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && input.value.length === 3) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
         complete();
       }
+    });
+    
+    // Add a "Done" button for mobile
+    const doneButton = document.createElement('button');
+    doneButton.textContent = 'DONE';
+    doneButton.style.position = 'fixed';
+    doneButton.style.left = `${canvasRect.left + x - 75}px`;
+    doneButton.style.top = `${canvasRect.top + y + 80}px`;
+    doneButton.style.width = '150px';
+    doneButton.style.height = '40px';
+    doneButton.style.fontSize = `${baseFontSize}px`;
+    doneButton.style.backgroundColor = '#00ffff';
+    doneButton.style.color = '#001a2e';
+    doneButton.style.border = 'none';
+    doneButton.style.borderRadius = '8px';
+    doneButton.style.fontFamily = 'monospace';
+    doneButton.style.fontWeight = 'bold';
+    doneButton.style.zIndex = '10000';
+    doneButton.style.cursor = 'pointer';
+    
+    document.body.appendChild(doneButton);
+    
+    doneButton.addEventListener('click', () => {
+      if (input.parentElement) {
+        document.body.removeChild(input);
+      }
+      if (doneButton.parentElement) {
+        document.body.removeChild(doneButton);
+      }
+      const name = input.value.toUpperCase().padEnd(3, '_');
+      onComplete(name);
     });
   }
 
