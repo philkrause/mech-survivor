@@ -31,6 +31,7 @@ export class GameUI {
   private mobileDashButton: Phaser.GameObjects.Container | null = null;
   private isMobile: boolean = false;
   private dashButtonBounds = { x: 0, y: 0, radius: 0 };
+  private dashButtonPressed = false; // Track if dash button is currently pressed
   
   // Mobile touch controls
   private touchTarget = { x: 0, y: 0, active: false };
@@ -809,14 +810,19 @@ export class GameUI {
   private setupMobileTouchControls(): void {
     // Make the entire game area interactive for touch-to-move
     const handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+      // Don't process if dash button was just pressed
+      if (this.dashButtonPressed) {
+        return;
+      }
+      
       // Don't process if touching the dash button area
       const distToDashButton = Math.sqrt(
         Math.pow(pointer.x - this.dashButtonBounds.x, 2) + 
         Math.pow(pointer.y - this.dashButtonBounds.y, 2)
       );
       
-      if (distToDashButton < this.dashButtonBounds.radius * 1.2) {
-        return; // Don't move toward dash button (with 20% extra exclusion zone)
+      if (distToDashButton < this.dashButtonBounds.radius * 1.5) {
+        return; // Don't move toward dash button (with 50% extra exclusion zone)
       }
       
       // Set touch target in world coordinates
@@ -827,6 +833,11 @@ export class GameUI {
     };
     
     const handlePointerMove = (pointer: Phaser.Input.Pointer) => {
+      // Don't move if dash button is pressed
+      if (this.dashButtonPressed) {
+        return;
+      }
+      
       if (pointer.isDown && this.touchTarget.active) {
         const cam = this.scene.cameras.main;
         this.touchTarget.x = pointer.x + cam.scrollX;
@@ -836,6 +847,7 @@ export class GameUI {
     
     const handlePointerUp = () => {
       this.touchTarget.active = false;
+      this.dashButtonPressed = false; // Reset dash button flag
     };
     
     this.scene.input.on('pointerdown', handlePointerDown);
@@ -896,12 +908,12 @@ export class GameUI {
     // Make button interactive
     buttonBg.setInteractive({ useHandCursor: true });
     
-    // Handle button press - use both pointerdown for immediate feedback
-    let dashTriggered = false;
-    
+    // Handle button press - use pointerdown for immediate feedback
     buttonBg.on('pointerdown', () => {
-      if (!dashTriggered && this.player && !this.player.isDead()) {
-        dashTriggered = true;
+      // Set flag to prevent touch-to-move from activating
+      this.dashButtonPressed = true;
+      
+      if (this.player && !this.player.isDead()) {
         this.player.triggerDash();
         
         // Visual feedback
@@ -912,10 +924,7 @@ export class GameUI {
           alpha: 0.5,
           duration: 100,
           yoyo: true,
-          ease: 'Power2',
-          onComplete: () => {
-            dashTriggered = false;
-          }
+          ease: 'Power2'
         });
       }
     });
@@ -923,6 +932,10 @@ export class GameUI {
     // Reset on pointer up
     buttonBg.on('pointerup', () => {
       buttonBg.setFillStyle(0x00aaaa, 0.7);
+      // Reset flag after a short delay
+      this.scene.time.delayedCall(50, () => {
+        this.dashButtonPressed = false;
+      });
     });
     
     // Hover effects (for tablets with mouse support)
