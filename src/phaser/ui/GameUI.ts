@@ -901,7 +901,7 @@ export class GameUI {
     buttonBg.setInteractive({ useHandCursor: true });
     
     // Handle button press
-    buttonBg.on('pointerdown', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+    buttonBg.on('pointerdown', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
       // Stop event from propagating to touch-to-move handler
       event.stopPropagation();
       
@@ -922,18 +922,18 @@ export class GameUI {
     });
     
     // Hover effects (for tablets with mouse support)
-    buttonBg.on('pointerover', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+    buttonBg.on('pointerover', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       buttonBg.setFillStyle(0x00dddd, 0.8);
     });
     
-    buttonBg.on('pointerout', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+    buttonBg.on('pointerout', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       buttonBg.setFillStyle(0x00aaaa, 0.7);
     });
     
     // Also handle pointerup to prevent touch-to-move from activating
-    buttonBg.on('pointerup', (pointer: Phaser.Input.Pointer, localX: number, localY: number, event: Phaser.Types.Input.EventData) => {
+    buttonBg.on('pointerup', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
     });
   }

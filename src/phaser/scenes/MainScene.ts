@@ -178,7 +178,7 @@ export default class MainScene extends Phaser.Scene {
     // Add and play gameplay music
     this.music = this.sound.add('gameplay_music', {
       loop: true,
-      volume: 1.0 // Full volume (respects global volume, which is 0.5 by default)
+      volume: 0.9 // 90% volume (respects global volume, which is 0.5 by default)
     });
     this.music.play();
 
@@ -946,10 +946,10 @@ export default class MainScene extends Phaser.Scene {
     // Set global volume (affects all sounds)
     this.sound.volume = volume;
     
-    // Update music volume (music should be at 1.0 to respect global volume)
-    // The effective volume will be volume * 1.0 = volume
+    // Update music volume (music at 0.9 to be 10% quieter)
+    // The effective volume will be volume * 0.9
     if (this.music) {
-      (this.music as Phaser.Sound.WebAudioSound).setVolume(1.0);
+      (this.music as Phaser.Sound.WebAudioSound).setVolume(0.9);
     }
   }
 
