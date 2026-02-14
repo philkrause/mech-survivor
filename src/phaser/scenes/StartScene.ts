@@ -13,7 +13,7 @@ export default class StartScene extends Phaser.Scene {
 
   preload() {
     //console.log('📦 preload StartScene');
-    this.load.image('starfield', '../../../assets/images/game/startscene.png');
+    this.load.image('starfield', '../../../assets/images/game/start_scene2.jpg');
     this.load.image('spark', '../../../assets/images/game/spark1.png');
     //this.load.image('darthback', '../../../assets/images/game/darth_back.png');
     

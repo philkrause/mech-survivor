@@ -846,8 +846,11 @@ export class GameUI {
     };
     
     const handlePointerUp = () => {
-      this.touchTarget.active = false;
-      this.dashButtonPressed = false; // Reset dash button flag
+      // Only reset touch-to-move, don't reset dash button flag here
+      // (dash button handles its own flag)
+      if (!this.dashButtonPressed) {
+        this.touchTarget.active = false;
+      }
     };
     
     this.scene.input.on('pointerdown', handlePointerDown);
@@ -863,10 +866,10 @@ export class GameUI {
   }
   
   /**
-   * Check if touch is active
+   * Check if touch is active (but not if dash button was just pressed)
    */
   public isTouchActive(): boolean {
-    return this.touchTarget.active;
+    return this.touchTarget.active && !this.dashButtonPressed;
   }
 
   /**
@@ -888,7 +891,7 @@ export class GameUI {
     // Create container for button
     this.mobileDashButton = this.scene.add.container(x, y);
     this.mobileDashButton.setScrollFactor(0);
-    this.mobileDashButton.setDepth(2001); // Above other UI
+    this.mobileDashButton.setDepth(3000); // Much higher depth to capture events first
     
     // Create button background (circle)
     const buttonBg = this.scene.add.circle(0, 0, buttonSize / 2, 0x00aaaa, 0.7);
@@ -913,7 +916,8 @@ export class GameUI {
     );
     
     this.mobileDashButton.on('pointerdown', () => {
-      // Set flag to prevent touch-to-move from activating
+      // CRITICAL: Clear touch-to-move state immediately
+      this.touchTarget.active = false;
       this.dashButtonPressed = true;
       
       if (this.player && !this.player.isDead()) {
@@ -932,10 +936,14 @@ export class GameUI {
       }
     });
     
-    // Reset on pointer up
+    // Reset on pointer up (with delay to ensure dash completes)
     this.mobileDashButton.on('pointerup', () => {
       buttonBg.setFillStyle(0x00aaaa, 0.7);
-      this.dashButtonPressed = false;
+      
+      // Delay reset to ensure touch-to-move doesn't immediately reactivate
+      this.scene.time.delayedCall(100, () => {
+        this.dashButtonPressed = false;
+      });
     });
     
     // Hover effects (for tablets with mouse support)

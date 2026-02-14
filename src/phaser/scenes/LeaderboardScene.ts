@@ -235,8 +235,9 @@ export default class LeaderboardScene extends Phaser.Scene {
       });
     }
 
-    // Back button at bottom
-    const buttonY = gameHeight * 0.92;
+    // Back button at bottom (higher on mobile to avoid toolbar)
+    const isMobile = gameWidth < 768;
+    const buttonY = isMobile ? gameHeight * 0.85 : gameHeight * 0.92;
     const buttonWidth = Math.min(300, gameWidth * 0.4);
     const buttonHeight = Math.min(60, gameHeight * 0.08);
     const buttonX = gameWidth / 2 - buttonWidth / 2;
