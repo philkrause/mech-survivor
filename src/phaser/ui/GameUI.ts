@@ -602,7 +602,7 @@ export class GameUI {
   private createGameTimer(): Phaser.GameObjects.Text {
     const timer = this.scene.add.text(
       this.scene.cameras.main.width / 2, // Center horizontally
-      40, // Below the experience bar
+      45, // Below the experience bar (moved down from 40 to 45)
       '00:00',
       {
         fontSize: '24px',
@@ -626,7 +626,7 @@ export class GameUI {
   private createKillCounter(): void {
     const screenWidth = this.scene.cameras.main.width;
     const x = screenWidth * 0.75; // 3/4 on the right side
-    const y = 40; // Same height as timer
+    const y = 45; // Same height as timer (moved down from 40 to 45)
 
     // Create skull sprite if texture exists
     if (this.scene.textures.exists('skull')) {
@@ -905,11 +905,14 @@ export class GameUI {
     buttonText.setOrigin(0.5);
     this.mobileDashButton.add(buttonText);
     
-    // Make button interactive
-    buttonBg.setInteractive({ useHandCursor: true });
+    // Make container interactive (not the individual circle)
+    // This prevents event conflicts with touch-to-move
+    this.mobileDashButton.setInteractive(
+      new Phaser.Geom.Circle(0, 0, buttonSize / 2),
+      Phaser.Geom.Circle.Contains
+    );
     
-    // Handle button press - use pointerdown for immediate feedback
-    buttonBg.on('pointerdown', () => {
+    this.mobileDashButton.on('pointerdown', () => {
       // Set flag to prevent touch-to-move from activating
       this.dashButtonPressed = true;
       
@@ -930,21 +933,22 @@ export class GameUI {
     });
     
     // Reset on pointer up
-    buttonBg.on('pointerup', () => {
+    this.mobileDashButton.on('pointerup', () => {
       buttonBg.setFillStyle(0x00aaaa, 0.7);
-      // Reset flag after a short delay
-      this.scene.time.delayedCall(50, () => {
-        this.dashButtonPressed = false;
-      });
+      this.dashButtonPressed = false;
     });
     
     // Hover effects (for tablets with mouse support)
-    buttonBg.on('pointerover', () => {
-      buttonBg.setFillStyle(0x00dddd, 0.8);
+    this.mobileDashButton.on('pointerover', () => {
+      if (!this.dashButtonPressed) {
+        buttonBg.setFillStyle(0x00dddd, 0.8);
+      }
     });
     
-    buttonBg.on('pointerout', () => {
-      buttonBg.setFillStyle(0x00aaaa, 0.7);
+    this.mobileDashButton.on('pointerout', () => {
+      if (!this.dashButtonPressed) {
+        buttonBg.setFillStyle(0x00aaaa, 0.7);
+      }
     });
   }
   
