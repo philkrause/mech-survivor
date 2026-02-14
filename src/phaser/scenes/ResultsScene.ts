@@ -506,7 +506,7 @@ export default class ResultsScene extends Phaser.Scene {
    * Create native HTML input for mobile
    */
   private createNativeInput(
-    x: number,
+    _x: number,
     y: number,
     baseFontSize: number,
     onComplete: (name: string) => void
