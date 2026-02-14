@@ -98,10 +98,7 @@ export default class ResultsScene extends Phaser.Scene {
     panelGraphics.strokeRect(leftPanelX - 20, currentY - 30, panelWidth, panelHeight);
     panelGraphics.setDepth(2);
 
-    // Detect mobile
-    const isMobile = gameWidth < 768;
-    
-    // Basic stats - use proportional spacing between labels and values
+    // Basic stats - use proportional spacing between labels and values (reuse isMobile from above)
     const valueX = isMobile ? gameWidth * 0.70 : gameWidth * 0.55; // Move values further right on mobile
     
     // Calculate responsive font size based on screen width (smaller on mobile)
