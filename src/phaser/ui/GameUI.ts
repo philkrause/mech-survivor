@@ -896,27 +896,33 @@ export class GameUI {
     // Make button interactive
     buttonBg.setInteractive({ useHandCursor: true });
     
-    // Handle button press (use 'pointerup' for better mobile responsiveness)
-    buttonBg.on('pointerup', () => {
-      // Call player's dash method
-      if (this.player && !this.player.isDead()) {
+    // Handle button press - use both pointerdown for immediate feedback
+    let dashTriggered = false;
+    
+    buttonBg.on('pointerdown', () => {
+      if (!dashTriggered && this.player && !this.player.isDead()) {
+        dashTriggered = true;
         this.player.triggerDash();
+        
+        // Visual feedback
+        buttonBg.setFillStyle(0x008888, 0.9);
+        this.scene.tweens.add({
+          targets: buttonBg,
+          scale: 0.9,
+          alpha: 0.5,
+          duration: 100,
+          yoyo: true,
+          ease: 'Power2',
+          onComplete: () => {
+            dashTriggered = false;
+          }
+        });
       }
-      
-      // Visual feedback
-      this.scene.tweens.add({
-        targets: buttonBg,
-        scale: 0.9,
-        alpha: 0.5,
-        duration: 100,
-        yoyo: true,
-        ease: 'Power2'
-      });
     });
     
-    // Visual feedback on press
-    buttonBg.on('pointerdown', () => {
-      buttonBg.setFillStyle(0x008888, 0.9);
+    // Reset on pointer up
+    buttonBg.on('pointerup', () => {
+      buttonBg.setFillStyle(0x00aaaa, 0.7);
     });
     
     // Hover effects (for tablets with mouse support)

@@ -367,8 +367,8 @@ export class RelicSystem {
     relicDisplay.setFrame(0);
 
     // Create instruction text
-    const instruction = this.scene.add.text(centerX, centerY + 200, 'Press SPACE or ENTER to stop slot or claim relic!', {
-      fontSize: '20px',
+    const instruction = this.scene.add.text(centerX, centerY + 200, 'Press SPACE/ENTER or TAP to stop slot or claim relic!', {
+      fontSize: '18px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 2
@@ -456,6 +456,10 @@ export class RelicSystem {
     // Add enter key listener
     this.enterKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER) || null;
     this.enterKey?.on('down', handleRelicSelection);
+    
+    // Add touch/pointer support for mobile - tap anywhere on overlay to claim
+    overlay.setInteractive();
+    overlay.on('pointerdown', handleRelicSelection);
   }
 
   /**
@@ -544,7 +548,7 @@ export class RelicSystem {
     const centerX = this.scene.cameras.main.centerX;
     const centerY = this.scene.cameras.main.centerY;
     
-    instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nPress SPACE or ENTER to claim!`);
+    instruction.setText(`${relicUpgrade.name}\n${relicUpgrade.description}\n\nPress SPACE/ENTER or TAP to claim!`);
     instruction.setPosition(centerX, centerY + 280); // Moved further down to avoid chest overlap
     instruction.setFontSize('18px');
     instruction.setColor('#ffd700');

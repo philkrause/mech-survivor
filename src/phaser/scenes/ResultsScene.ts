@@ -373,19 +373,30 @@ export default class ResultsScene extends Phaser.Scene {
     const gameHeight = this.scale.height;
     const isMobile = this.isMobileDevice();
 
-    // Instruction text
-    this.add.text(x, y, 'ENTER PILOT NAME:', {
-      fontSize: `${baseFontSize}px`,
-      color: '#00ffff',
-      fontFamily: 'monospace',
-      fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(3);
+    // Instruction text - positioned differently for mobile vs desktop
+    if (isMobile) {
+      // Mobile: Show smaller instruction below the input area
+      this.add.text(x, y + 140, 'ENTER 3-LETTER NAME ABOVE', {
+        fontSize: `${baseFontSize * 0.7}px`,
+        color: '#00ffff',
+        fontFamily: 'monospace',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(3);
+    } else {
+      // Desktop: Show instruction above name input
+      this.add.text(x, y, 'ENTER PILOT NAME:', {
+        fontSize: `${baseFontSize}px`,
+        color: '#00ffff',
+        fontFamily: 'monospace',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(3);
+    }
 
     // Name display (3 letters)
     let nameLetters = ['_', '_', '_'];
     let currentIndex = 0;
 
-    const nameText = this.add.text(x, y + 40, nameLetters.join(' '), {
+    const nameText = this.add.text(x, isMobile ? y + 120 : y + 40, nameLetters.join(' '), {
       fontSize: `${baseFontSize * 1.8}px`,
       color: '#ffaa00',
       fontFamily: 'monospace',
@@ -393,22 +404,29 @@ export default class ResultsScene extends Phaser.Scene {
       letterSpacing: 10
     }).setOrigin(0.5).setDepth(3);
 
-    // Blinking cursor under current letter
-    const cursorY = y + 65;
+    // Hide name text on mobile initially (will show after submission)
+    nameText.setVisible(!isMobile);
+
+    // Blinking cursor under current letter (only for desktop)
+    const cursorY = isMobile ? y + 145 : y + 65;
     const cursor = this.add.text(x - 40 + (currentIndex * 40), cursorY, '▲', {
       fontSize: `${baseFontSize}px`,
       color: '#00ffff',
       fontFamily: 'monospace'
     }).setOrigin(0.5).setDepth(3);
+    
+    cursor.setVisible(!isMobile);
 
-    // Pulse animation for cursor
-    this.tweens.add({
-      targets: cursor,
-      alpha: 0,
-      duration: 500,
-      yoyo: true,
-      repeat: -1
-    });
+    // Pulse animation for cursor (only on desktop)
+    if (!isMobile) {
+      this.tweens.add({
+        targets: cursor,
+        alpha: 0,
+        duration: 500,
+        yoyo: true,
+        repeat: -1
+      });
+    }
 
     // Function to add a letter
     const addLetter = (letter: string) => {
@@ -417,11 +435,13 @@ export default class ResultsScene extends Phaser.Scene {
         currentIndex++;
         nameText.setText(nameLetters.join(' '));
         
-        // Update cursor position
-        if (currentIndex < 3) {
-          cursor.x = x - 40 + (currentIndex * 40);
-        } else {
-          cursor.setVisible(false); // Hide when all 3 letters entered
+        // Update cursor position (desktop only)
+        if (!isMobile) {
+          if (currentIndex < 3) {
+            cursor.x = x - 40 + (currentIndex * 40);
+          } else {
+            cursor.setVisible(false); // Hide when all 3 letters entered
+          }
         }
 
         // If all 3 letters entered, save and show play button
@@ -443,26 +463,24 @@ export default class ResultsScene extends Phaser.Scene {
         currentIndex--;
         nameLetters[currentIndex] = '_';
         nameText.setText(nameLetters.join(' '));
-        cursor.x = x - 40 + (currentIndex * 40);
-        cursor.setVisible(true);
+        if (!isMobile) {
+          cursor.x = x - 40 + (currentIndex * 40);
+          cursor.setVisible(true);
+        }
       }
     };
 
     if (isMobile) {
-      // Mobile: Use native HTML input
-      this.createNativeInput(x, y + 95, baseFontSize, (name: string) => {
+      // Mobile: Use native HTML input positioned at the top
+      this.createNativeInput(x, y, baseFontSize, (name: string) => {
+        // Show the name in the display after submission
+        nameText.setVisible(true);
+        
         // Fill in the name
         for (let i = 0; i < Math.min(3, name.length); i++) {
           addLetter(name[i]);
         }
       });
-      
-      // Hint text for mobile
-      this.add.text(x, y + 95, 'TAP TO ENTER NAME', {
-        fontSize: `${baseFontSize * 0.7}px`,
-        color: '#666666',
-        fontFamily: 'monospace'
-      }).setOrigin(0.5).setDepth(3);
     } else {
       // Desktop: Use keyboard input
       // Hint text for desktop
@@ -497,94 +515,110 @@ export default class ResultsScene extends Phaser.Scene {
     const canvas = this.game.canvas;
     const canvasRect = canvas.getBoundingClientRect();
     
+    // Container for input and button - centered on screen
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '50%';
+    container.style.top = `${canvasRect.top + y - 50}px`; // Position above the instruction text
+    container.style.transform = 'translateX(-50%)'; // Center horizontally
+    container.style.zIndex = '10000';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.gap = '12px';
+    
     // Create HTML input element
     const input = document.createElement('input');
     input.type = 'text';
     input.maxLength = 3;
     input.placeholder = 'AAA';
-    input.style.position = 'fixed'; // Use fixed positioning
-    input.style.left = `${canvasRect.left + x - 75}px`;
-    input.style.top = `${canvasRect.top + y + 20}px`;
-    input.style.width = '150px';
-    input.style.height = '50px';
-    input.style.fontSize = `${baseFontSize * 1.2}px`;
+    input.style.width = '200px';
+    input.style.height = '60px';
+    input.style.fontSize = `${Math.max(24, baseFontSize * 1.5)}px`;
     input.style.textAlign = 'center';
     input.style.textTransform = 'uppercase';
     input.style.backgroundColor = '#001a2e';
     input.style.color = '#ffaa00';
-    input.style.border = '3px solid #00ffff';
-    input.style.borderRadius = '8px';
+    input.style.border = '4px solid #00ffff';
+    input.style.borderRadius = '12px';
     input.style.fontFamily = 'monospace';
     input.style.fontWeight = 'bold';
-    input.style.letterSpacing = '5px';
-    input.style.zIndex = '10000';
+    input.style.letterSpacing = '8px';
     input.style.outline = 'none';
+    input.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
     
-    // Add to DOM
-    document.body.appendChild(input);
+    // Add a "SUBMIT" button for mobile
+    const submitButton = document.createElement('button');
+    submitButton.textContent = 'SUBMIT NAME';
+    submitButton.style.width = '200px';
+    submitButton.style.height = '55px';
+    submitButton.style.fontSize = `${Math.max(18, baseFontSize * 0.9)}px`;
+    submitButton.style.backgroundColor = '#00ffff';
+    submitButton.style.color = '#001a2e';
+    submitButton.style.border = 'none';
+    submitButton.style.borderRadius = '12px';
+    submitButton.style.fontFamily = 'monospace';
+    submitButton.style.fontWeight = 'bold';
+    submitButton.style.cursor = 'pointer';
+    submitButton.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.8)';
+    submitButton.style.transition = 'all 0.2s';
+    
+    container.appendChild(input);
+    container.appendChild(submitButton);
+    document.body.appendChild(container);
     
     // Auto-focus to bring up keyboard (with slight delay for mobile)
     setTimeout(() => {
       input.focus();
       input.click(); // Some mobile browsers need click too
-    }, 200);
+    }, 300);
     
     // Handle input
     input.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
       target.value = target.value.toUpperCase().replace(/[^A-Z]/g, '');
       
-      // Auto-submit when 3 letters entered
-      if (target.value.length === 3) {
-        setTimeout(() => complete(), 100);
-      }
+      // Enable submit button when 3 letters entered
+      submitButton.disabled = target.value.length < 3;
+      submitButton.style.opacity = target.value.length < 3 ? '0.5' : '1.0';
     });
     
-    // Handle completion (blur or enter)
+    // Initially disable submit button
+    submitButton.disabled = true;
+    submitButton.style.opacity = '0.5';
+    
+    // Handle completion
     const complete = () => {
-      if (!input.parentElement) return; // Already removed
+      if (!container.parentElement) return; // Already removed
       
       const name = input.value.toUpperCase().padEnd(3, '_');
-      document.body.removeChild(input);
+      document.body.removeChild(container);
       onComplete(name);
     };
     
     input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && input.value.length === 3) {
         e.preventDefault();
         complete();
       }
     });
     
-    // Add a "Done" button for mobile
-    const doneButton = document.createElement('button');
-    doneButton.textContent = 'DONE';
-    doneButton.style.position = 'fixed';
-    doneButton.style.left = `${canvasRect.left + x - 75}px`;
-    doneButton.style.top = `${canvasRect.top + y + 80}px`;
-    doneButton.style.width = '150px';
-    doneButton.style.height = '40px';
-    doneButton.style.fontSize = `${baseFontSize}px`;
-    doneButton.style.backgroundColor = '#00ffff';
-    doneButton.style.color = '#001a2e';
-    doneButton.style.border = 'none';
-    doneButton.style.borderRadius = '8px';
-    doneButton.style.fontFamily = 'monospace';
-    doneButton.style.fontWeight = 'bold';
-    doneButton.style.zIndex = '10000';
-    doneButton.style.cursor = 'pointer';
-    
-    document.body.appendChild(doneButton);
-    
-    doneButton.addEventListener('click', () => {
-      if (input.parentElement) {
-        document.body.removeChild(input);
+    submitButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (input.value.length >= 1) { // Allow submission with 1+ letters
+        complete();
       }
-      if (doneButton.parentElement) {
-        document.body.removeChild(doneButton);
-      }
-      const name = input.value.toUpperCase().padEnd(3, '_');
-      onComplete(name);
+    });
+    
+    // Add touch feedback for button
+    submitButton.addEventListener('touchstart', () => {
+      submitButton.style.transform = 'scale(0.95)';
+      submitButton.style.backgroundColor = '#00cccc';
+    });
+    
+    submitButton.addEventListener('touchend', () => {
+      submitButton.style.transform = 'scale(1)';
+      submitButton.style.backgroundColor = '#00ffff';
     });
   }
 
