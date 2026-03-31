@@ -816,8 +816,9 @@ export class Player {
       return false;
     }
 
-    // Apply damage reduction from relics
-    const actualDamage = amount * (1 - this.damageReduction);
+    // Apply damage reduction from relics (cap at 70% to prevent invincibility)
+    const cappedReduction = Math.min(0.70, this.damageReduction);
+    const actualDamage = amount * (1 - cappedReduction);
 
     // Reduce health
     this.health = Math.max(0, this.health - actualDamage);

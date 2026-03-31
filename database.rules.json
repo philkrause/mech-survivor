@@ -2,20 +2,20 @@
   "rules": {
     "leaderboard": {
       ".read": true,
-      ".write": true,
       "$entryId": {
+        ".write": "!data.exists() && newData.hasChildren(['name', 'kills', 'timestamp', 'deviceId'])",
         ".validate": "newData.hasChildren(['name', 'kills', 'timestamp', 'deviceId'])",
         "name": {
-          ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z_]{3}$/) && !newData.val().matches(/^(NIG|FAG|KKK|ASS|FUK|FCK|DIK|KYS|WTF)$/)"
         },
         "kills": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
         },
         "timestamp": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000 && newData.val() >= now - 60000"
         },
         "deviceId": {
-          ".validate": "newData.isString() && newData.val().length > 0"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100"
         }
       }
     }
