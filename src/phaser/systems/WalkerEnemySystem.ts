@@ -375,8 +375,8 @@ export class WalkerEnemySystem {
         return;
       }
       
-      light.setColor(GAME_CONFIG.LIGHTING.ENEMY_GLOW.COLOR);
-      light.setIntensity(GAME_CONFIG.LIGHTING.ENEMY_GLOW.INTENSITY);
+      light.setColor(GAME_CONFIG.WALKER.GLOW_COLOR);
+      light.setIntensity(GAME_CONFIG.WALKER.GLOW_INTENSITY);
       
       this.enemyLights.set(enemy, light);
     } catch (error) {
@@ -885,12 +885,12 @@ export class WalkerEnemySystem {
     const elapsed = this.scene.time.now - laserLine.startTime;
     
     if (!laserLine.isFiring) {
-      // AIMING PHASE: Transparent red line only (no damage)
+      // AIMING PHASE: Transparent cyan line only (no damage)
       const alpha = Math.max(0, Math.min(1, (this.aimingDuration - elapsed) / this.aimingDuration));
-      graphics.lineStyle(4, 0xff0000, alpha * 0.4); // Transparent red aiming line
+      graphics.lineStyle(4, 0x00ccff, alpha * 0.4);
       graphics.lineBetween(line.x1, line.y1, line.x2, line.y2);
     } else {
-      // FIRING PHASE: Red line with gradual animation down the line
+      // FIRING PHASE: Cyan line with gradual animation down the line
       const firingElapsed = elapsed - this.aimingDuration;
       const firingProgress = Math.min(1, firingElapsed / this.firingDuration);
       
@@ -898,23 +898,22 @@ export class WalkerEnemySystem {
       const remaining = this.laserDuration - elapsed;
       const alpha = Math.max(0, Math.min(1, remaining / this.firingDuration));
       
-      // Calculate how far the red has traveled (from start to end)
-      const redProgress = firingProgress; // 0 to 1 as red travels down line
+      const progress = firingProgress;
       
-      // Calculate point where red transition occurs
-      const transitionX = line.x1 + (line.x2 - line.x1) * redProgress;
-      const transitionY = line.y1 + (line.y2 - line.y1) * redProgress;
+      // Calculate point where transition occurs
+      const transitionX = line.x1 + (line.x2 - line.x1) * progress;
+      const transitionY = line.y1 + (line.y2 - line.y1) * progress;
       
-      // Draw transparent red line (aiming section) - from start to transition point
-      graphics.lineStyle(4, 0xff0000, alpha * 0.3);
+      // Draw transparent cyan line (aiming section) - from start to transition point
+      graphics.lineStyle(4, 0x00ccff, alpha * 0.3);
       graphics.lineBetween(line.x1, line.y1, transitionX, transitionY);
       
-      // Draw red firing section - from transition point to end
-      graphics.lineStyle(6, 0xff0000, alpha * 0.9); // Red outline
+      // Draw cyan firing section - from transition point to end
+      graphics.lineStyle(6, 0x00ccff, alpha * 0.9);
       graphics.lineBetween(transitionX, transitionY, line.x2, line.y2);
       
-      // Draw inner bright red core for firing section
-      graphics.lineStyle(3, 0xff6666, alpha * 0.8); // Bright red core
+      // Draw inner bright white-cyan core for firing section
+      graphics.lineStyle(3, 0x99eeff, alpha * 0.8);
       graphics.lineBetween(transitionX, transitionY, line.x2, line.y2);
     }
   }

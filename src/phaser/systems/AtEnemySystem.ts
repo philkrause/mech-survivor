@@ -368,7 +368,7 @@ export class AtEnemySystem {
         return;
       }
       
-      light.setColor(GAME_CONFIG.LIGHTING.ENEMY_GLOW.COLOR);
+      light.setColor(GAME_CONFIG.AT.GLOW_COLOR);
       light.setIntensity(GAME_CONFIG.LIGHTING.ENEMY_GLOW.INTENSITY);
       
       this.enemyLights.set(enemy, light);
@@ -917,8 +917,8 @@ export class AtEnemySystem {
           const age = now - curr.time;
           const alpha = 1.0 - (age / maxTrailLength); // Fade out over time
           
-          // Red trail line
-          trailGraphics.lineStyle(3, 0xff0000, alpha * 0.8);
+          // Magenta trail line
+          trailGraphics.lineStyle(3, 0xff00ff, alpha * 0.8);
           trailGraphics.lineBetween(prev.x, prev.y, curr.x, curr.y);
           
           // White highlight

@@ -113,17 +113,20 @@ export const GAME_CONFIG = {
     SPAWN_INTERVAL: 2000, // ms between spawns (base interval)
     MAX_COUNT: 30, // Maximum number of AT enemies at once
     MIN_LEVEL: 7, // Minimum player level before AT enemies spawn
-    RELIC_DROP_CHANCE: 0.01
+    RELIC_DROP_CHANCE: 0.01,
+    GLOW_COLOR: 0xff00ff, // Magenta glow to match projectile color
   },
   WALKER: {
     SPAWN_INTERVAL: 2500, // ms between spawns (base interval)
     MAX_COUNT: 30, // Maximum number of Walker enemies at once
     MIN_LEVEL: 9, // Minimum player level before Walker enemies spawn
     RELIC_DROP_CHANCE: 0.01,
+    GLOW_COLOR: 0x00ccff, // Cyan glow to distinguish from other enemies
+    GLOW_INTENSITY: 1.0, // Brighter glow for walker visibility
     AIMING_DURATION: 1000, // ms - how long walker aims (white line, no damage)
     FIRING_DURATION: 1000, // ms - how long walker fires (blue line, does damage)
     LASER_DURATION: 2000, // ms - total laser duration (aiming + firing)
-    LASER_DAMAGE: 15, // Reduced damage per hit when player touches laser
+    LASER_DAMAGE: 10, // Reduced damage per hit when player touches laser
     LASER_DAMAGE_INTERVAL: 200 // ms - interval between damage ticks when player is in laser
   },
   EXPERIENCE_ORB: {
@@ -156,11 +159,11 @@ export const GAME_CONFIG = {
       SPEED: 300,
       LIFESPAN: 3000, // ms - longer lifespan
       SCALE: 0.8,
-      DAMAGE: 10,
+      DAMAGE: 5,
       ROTATEWITHDIRECTION: true,
       MAXSIZE: 30, // smaller pool size
       MAX_COUNT: 30, // smaller pool size
-      TINT: 0xff4444, // slightly different red
+      TINT: 0xff00ff, // Bright magenta - much more visible and distinct from player lasers
       DEPTH: 2,
     },
   },

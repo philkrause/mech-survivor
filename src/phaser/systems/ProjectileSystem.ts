@@ -66,7 +66,11 @@ export class ProjectileSystem {
         projectile.setDepth(config.depth);
 
         if (config.tint !== undefined) {
-          projectile.setTint(config.tint);
+          if (config.key === 'enemy_laser') {
+            projectile.setTintFill(config.tint);
+          } else {
+            projectile.setTint(config.tint);
+          }
         }
 
         if (projectile.body) {
@@ -133,7 +137,11 @@ export class ProjectileSystem {
     // Apply tint if specified (only for non-blaster projectiles)
     // Blaster uses original red image color, so skip tint for better visibility
     if (config.tint !== undefined && key !== 'blaster') {
-      projectile.setTint(config.tint);
+      if (key === 'enemy_laser') {
+        projectile.setTintFill(config.tint);
+      } else {
+        projectile.setTint(config.tint);
+      }
     }
     
     if (projectile.body) {
